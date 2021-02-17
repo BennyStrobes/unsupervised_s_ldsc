@@ -15,6 +15,7 @@ import jackknife as jk
 from irwls import IRWLS
 from scipy.stats import t as tdist
 from collections import namedtuple
+import pdb
 np.seterr(divide='raise', invalid='raise')
 
 s = lambda x: remove_brackets(str(np.matrix(x)))
@@ -202,6 +203,7 @@ class LD_Score_Regression(object):
             jknife = self._combine_twostep_jknives(
                 step1_jknife, step2_jknife, M_tot, c, Nbar)
         elif old_weights:
+            pdb.set_trace()
             initial_w = np.sqrt(initial_w)
             x = IRWLS._weight(x, initial_w)
             y = IRWLS._weight(yp, initial_w)
@@ -341,7 +343,6 @@ class Hsq(LD_Score_Regression):
         step1_ii = None
         if twostep is not None:
             step1_ii = y < twostep
-
         LD_Score_Regression.__init__(self, y, x, w, N, M, n_blocks, intercept=intercept,
                                      slow=slow, step1_ii=step1_ii, old_weights=old_weights)
         self.mean_chisq, self.lambda_gc = self._summarize_chisq(y)

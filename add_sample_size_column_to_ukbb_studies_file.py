@@ -9,12 +9,18 @@ import pdb
 def get_study_sample_size(study_file):
 	g = open(study_file)
 	head_count = 0
+	stats = []
+	counter = 0
 	for line in g:
 		line = line.rstrip()
 		data = line.split()
 		if head_count == 0:
 			head_count = head_count + 1
 			continue
+		#zscore = float(data[9])
+		#chi_squared = np.square(zscore)
+		#stats.append(chi_squared)
+		#counter = counter + 1
 		if head_count == 1:
 			head_count = head_count + 1
 			sample_size = data[4]
@@ -48,6 +54,8 @@ for line in f:
 		continue
 	study_name = data[0]
 	study_file = data[1]
+	if '/' in study_name:
+		study_name = '_'.join(study_name.split('/'))
 	print(study_name)
 	study_sample_size = get_study_sample_size(study_file)
 	t.write(study_name + '\t' + study_file + '\t' + study_sample_size + '\n')

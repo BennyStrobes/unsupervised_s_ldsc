@@ -36,8 +36,52 @@ processed_ukbb_dir=$preprocess_root"processed_ukbb/"
 
 # Direcotry containing preprocess LD Score data
 processed_ld_score_dir=$preprocess_root"processed_ld_scores/"
-sh preprocess_shell.sh $one_k_genomes_dir $one_k_genomes_sample_annotation_file $ukbb_studies_file $centimorgan_map_dir $processed_1k_genomes_genotype_dir $processed_ukbb_dir $processed_ld_score_dir
 
+
+########################################
+# Preprocess data
+########################################
+
+if false; then
+sbatch preprocess_shell.sh $one_k_genomes_dir $one_k_genomes_sample_annotation_file $ukbb_studies_file $centimorgan_map_dir $processed_1k_genomes_genotype_dir $processed_ukbb_dir $processed_ld_score_dir
+fi
+
+if false; then
+for chrom_num in {1..22}; do 
+	echo $chrom_num
+	sbatch preprocess_shell_parallel_per_chromosome.sh $one_k_genomes_dir $one_k_genomes_sample_annotation_file $ukbb_studies_file $centimorgan_map_dir $processed_1k_genomes_genotype_dir $processed_ukbb_dir $processed_ld_score_dir $chrom_num
+done
+fi
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#########################
+# S-LDSC experimentation
+##########################
 
 
 
@@ -50,3 +94,16 @@ python ldsc.py --bfile ${temp_genotype_dir}22 --l2 --l2-pairwise --chunk-size 1 
 fi
 
 
+
+module load python/2.7-anaconda
+
+if false; then
+python munge_sumstats.py --sumstats /work-zfs/abattle4/bstrober/tools/ldsc/GIANT_BMI_Speliotes2010_publicrelease_HapMapCeuFreq.txt --merge-alleles /work-zfs/abattle4/bstrober/tools/ldsc/w_hm3.snplist --out BMI --a1-inc
+fi
+
+
+
+if false; then
+python ldsc.py --h2 BMI.sumstats.gz --ref-ld-chr /work-zfs/abattle4/bstrober/tools/ldsc/baseline/baseline. --w-ld-chr /work-zfs/abattle4/bstrober/tools/ldsc/weights_hm3_no_hla/weights. --overlap-annot --frqfile-chr /work-zfs/abattle4/bstrober/tools/ldsc/1000G_frq/1000G.mac5eur. --out BMI_baseline
+
+fi

@@ -37,6 +37,9 @@ processed_ukbb_dir=$preprocess_root"processed_ukbb/"
 # Direcotry containing preprocess LD Score data
 processed_ld_score_dir=$preprocess_root"processed_ld_scores/"
 
+# Directory containing visualizations of processed data
+visualize_processed_data_dir=$preprocess_root"visualize_processed_data/"
+
 
 ########################################
 # Preprocess data
@@ -49,29 +52,57 @@ fi
 if false; then
 for chrom_num in {1..22}; do 
 	echo $chrom_num
-	sbatch preprocess_shell_parallel_per_chromosome.sh $one_k_genomes_dir $one_k_genomes_sample_annotation_file $ukbb_studies_file $centimorgan_map_dir $processed_1k_genomes_genotype_dir $processed_ukbb_dir $processed_ld_score_dir $chrom_num
+	sh preprocess_shell_parallel_per_chromosome.sh $one_k_genomes_dir $one_k_genomes_sample_annotation_file $ukbb_studies_file $centimorgan_map_dir $processed_1k_genomes_genotype_dir $processed_ukbb_dir $processed_ld_score_dir $chrom_num
 done
 fi
 
+module load R/3.5.1
+Rscript visualize_processed_data.R $processed_ld_score_dir $visualize_processed_data_dir
 
 
 
+########################################
+# Run unsupervised S-LDSC
+########################################
 
 
+# Input data files
+##################
+chromosomes_for_training="/work-zfs/abattle4/bstrober/unsupervised_s_ldsc/input_data/chromosomes_for_unsupervised_s_ldsc.txt"
 
+# Output directories
+#####################
+# root directory for analysis related to unsupervised-s-ldsc
+usldsc_root="/work-zfs/abattle4/bstrober/unsupervised_s_ldsc/usldsc_training/"
 
+# Directory containing organized data for usldsc training
+organized_training_data_dir=$usldsc_root"organized_training_data/"
 
+# Directory containing results of model training
+trained_usldsc_model_dir=$usldsc_root"usldsc_results/"
 
+# Directory containing results of model training
+usldsc_results_dir=$usldsc_root"usldsc_results/"
 
+if false; then
+sh organize_usldsc_training_data.sh $chromosomes_for_training $processed_ukbb_dir $processed_ld_score_dir $organized_training_data_dir
+fi
 
+training_data_study_file=$organized_training_data_dir"usldsc_training_studies.txt"
+training_data_pairwise_ld_file=$organized_training_data_dir"usldsc_training_pairwise_ld_files.txt"
+training_data_cluster_info_file=$organized_training_data_dir"usldsc_training_snp_cluster_files.txt"
 
+model_version="als"
+k="7"
+output_root=$trained_usldsc_model_dir"trained_usldsc_"$model_version"_k_"$k"_"
+if false; then
+sbatch run_usldsc.sh $training_data_study_file $training_data_pairwise_ld_file $training_data_cluster_info_file $k $model_version $output_root
+fi
 
-
-
-
-
-
-
+module load R/3.5.1
+if false; then
+Rscript visualize_usldsc_results.R $trained_usldsc_model_dir $processed_ukbb_dir $usldsc_results_dir
+fi
 
 
 

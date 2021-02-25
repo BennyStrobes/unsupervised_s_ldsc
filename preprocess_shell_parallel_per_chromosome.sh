@@ -32,7 +32,6 @@ updated_ukbb_studies_file=$processed_ukbb_dir"updated_ukbb_studies.txt"
 
 
 echo $chrom_num
-
 # Use vcftools to filter to european ancestry samples
 vcftools --gzvcf $one_k_genomes_dir"ALL.chr"$chrom_num".phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz" --keep $eur_1k_genomes_samples_file --out $processed_1k_genomes_genotype_dir"chr_"$chrom_num"_1k_genomes_european_only" --recode --recode-INFO-all
 # Use vcftools to filter to sites that have MAF > .05 in european samples and those sites that dont pass filters

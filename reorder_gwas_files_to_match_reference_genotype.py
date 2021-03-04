@@ -2,7 +2,7 @@ import numpy as np
 import os
 import sys
 import pdb
-
+import gzip
 
 
 
@@ -49,7 +49,7 @@ def extract_ukbb_study_names(gwas_studies_file):
 
 def filter_and_print_gwas(study_file, ordered_snp_arr, snp_dicti, chrom_num, output_file):
 	chrom_string = chrom_num + ':'
-	f = open(study_file)
+	f = gzip.open(study_file)
 	head_count = 0
 	for line in f:
 		# Skip header
@@ -63,13 +63,17 @@ def filter_and_print_gwas(study_file, ordered_snp_arr, snp_dicti, chrom_num, out
 		line = line.rstrip()
 		data = line.split()
 		# error checking to make sure we have the apprpriate number of lines
-		if len(data) != 11:
+		if len(data) == 11:
+			adder = 0
+		elif len(data) == 12:
+			adder = 1
+		else:
 			print('assumption error')
 			pdb.set_trace()
 		# Throw out variants not found in 1K genomes
 		if data[0] not in snp_dicti:
 			continue
-		z_score = float(data[9])
+		z_score = float(data[(9+adder)])
 		chi_sq = np.square(z_score)
 		# If we made it here, we have passed all of our filters
 		# And thus we update the variant_dicti

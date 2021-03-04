@@ -3,7 +3,7 @@ import os
 import sys
 import pdb
 from scipy.stats import chi2
-
+import gzip
 
 def extract_1k_genomes_variants(genotype_1k_genomes_file):
 	f = open(genotype_1k_genomes_file)
@@ -71,12 +71,15 @@ def pvalue_to_z_score(pvalue):
 def update_variant_dicti_with_ukbb_data_from_single_study(variant_dicti, chrom_num, ukbb_study_file, ukbb_sample_size):
 	chrom_string = chrom_num + ':'
 	max_chi_squared = np.max([80, 0.001*ukbb_sample_size])
-	f = open(ukbb_study_file)
+	f = gzip.open(ukbb_study_file)
 	head_count = 0
 	for line in f:
 		# Skip header
 		if head_count == 0:
 			head_count = head_count + 1
+			line = line.rstrip()
+			data = line.split()
+			print(data)
 			continue
 		# Limit to variants from desired chromosome
 		if line.startswith(chrom_string) == False:
@@ -85,7 +88,11 @@ def update_variant_dicti_with_ukbb_data_from_single_study(variant_dicti, chrom_n
 		line = line.rstrip()
 		data = line.split()
 		# error checking to make sure we have the apprpriate number of lines
-		if len(data) != 11:
+		if len(data) == 11:
+			adder = 0
+		elif len(data) == 12:
+			adder = 1
+		else:
 			print('assumption error')
 			pdb.set_trace()
 		# Throw out variants not found in 1K genomes
@@ -98,12 +105,12 @@ def update_variant_dicti_with_ukbb_data_from_single_study(variant_dicti, chrom_n
 		if maf > .5:
 			print('assumption error')
 			pdb.set_trace()
-		low_confidence_boolean = data[3]
+		low_confidence_boolean = data[(3 + adder)]
 		if low_confidence_boolean == "true":
 			continue
 		#pvalue = float(data[10])
 		#z_score = pvalue_to_z_score(pvalue)
-		z_score = float(data[9])
+		z_score = float(data[(9+adder)])
 		chi_sq = np.square(z_score)
 		if chi_sq > max_chi_squared:
 			continue

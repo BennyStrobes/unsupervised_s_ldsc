@@ -2,12 +2,13 @@ import numpy as np
 import os
 import sys
 import pdb
+import gzip
 
 
 
 
 def get_study_sample_size(study_file):
-	g = open(study_file)
+	g = gzip.open(study_file)
 	head_count = 0
 	stats = []
 	counter = 0
@@ -16,6 +17,12 @@ def get_study_sample_size(study_file):
 		data = line.split()
 		if head_count == 0:
 			head_count = head_count + 1
+			if len(data) == 12:
+				index = 5
+			elif len(data) == 11:
+				index = 4
+			if data[index] != 'n_complete_samples':
+				print('assumptino error')
 			continue
 		#zscore = float(data[9])
 		#chi_squared = np.square(zscore)
@@ -23,11 +30,14 @@ def get_study_sample_size(study_file):
 		#counter = counter + 1
 		if head_count == 1:
 			head_count = head_count + 1
-			sample_size = data[4]
+			sample_size = data[index]
 			continue
-		if data[4] != sample_size:
+		if data[index] != sample_size:
 			print('assumption error')
 			pdb.set_trace()
+		head_count = head_count + 1
+		if head_count > 5000:
+			break
 	g.close()
 	return sample_size
 

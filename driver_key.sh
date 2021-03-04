@@ -15,7 +15,7 @@ one_k_genomes_dir="/work-zfs/abattle4/lab_data/1k_genomes/"
 one_k_genomes_sample_annotation_file="/work-zfs/abattle4/lab_data/1k_genomes/integrated_call_samples_v3.20130502.ALL.panel"
 
 # File with line for each UKBB study to be used containing location of all UKBB studies to be used
-ukbb_studies_file="/work-zfs/abattle4/bstrober/unsupervised_s_ldsc/input_data/ukbb_studies.tsv"
+ukbb_studies_file="/work-zfs/abattle4/bstrober/unsupervised_s_ldsc/input_data/independent_seed_1_heritable_ukbb_studies.tsv"
 
 # Directory containing centimorgan map file for each chromosome
 # Files of format: genetic_map_chr19_combined_b37.txt
@@ -44,9 +44,8 @@ visualize_processed_data_dir=$preprocess_root"visualize_processed_data/"
 ########################################
 # Preprocess data
 ########################################
-
 if false; then
-sbatch preprocess_shell.sh $one_k_genomes_dir $one_k_genomes_sample_annotation_file $ukbb_studies_file $centimorgan_map_dir $processed_1k_genomes_genotype_dir $processed_ukbb_dir $processed_ld_score_dir
+sh preprocess_shell.sh $one_k_genomes_dir $one_k_genomes_sample_annotation_file $ukbb_studies_file $centimorgan_map_dir $processed_1k_genomes_genotype_dir $processed_ukbb_dir $processed_ld_score_dir
 fi
 
 if false; then
@@ -55,10 +54,14 @@ for chrom_num in {1..22}; do
 	sh preprocess_shell_parallel_per_chromosome.sh $one_k_genomes_dir $one_k_genomes_sample_annotation_file $ukbb_studies_file $centimorgan_map_dir $processed_1k_genomes_genotype_dir $processed_ukbb_dir $processed_ld_score_dir $chrom_num
 done
 fi
-
+if false; then
+chrom_num="4"
+sh preprocess_shell_parallel_per_chromosome.sh $one_k_genomes_dir $one_k_genomes_sample_annotation_file $ukbb_studies_file $centimorgan_map_dir $processed_1k_genomes_genotype_dir $processed_ukbb_dir $processed_ld_score_dir $chrom_num
+fi
+if false; then
 module load R/3.5.1
 Rscript visualize_processed_data.R $processed_ld_score_dir $visualize_processed_data_dir
-
+fi
 
 
 ########################################
@@ -82,8 +85,7 @@ organized_training_data_dir=$usldsc_root"organized_training_data/"
 trained_usldsc_model_dir=$usldsc_root"usldsc_results/"
 
 # Directory containing results of model training
-usldsc_results_dir=$usldsc_root"usldsc_results/"
-
+usldsc_visualize_results_dir=$usldsc_root"usldsc_results_visualization/"
 if false; then
 sh organize_usldsc_training_data.sh $chromosomes_for_training $processed_ukbb_dir $processed_ld_score_dir $organized_training_data_dir
 fi
@@ -98,6 +100,20 @@ output_root=$trained_usldsc_model_dir"trained_usldsc_"$model_version"_k_"$k"_"
 if false; then
 sbatch run_usldsc.sh $training_data_study_file $training_data_pairwise_ld_file $training_data_cluster_info_file $k $model_version $output_root
 fi
+
+
+
+training_data_study_file=$organized_training_data_dir"usldsc_training_studies.txt"
+training_data_pairwise_ld_file=$organized_training_data_dir"usldsc_training_pairwise_ld_files.txt"
+training_data_cluster_info_file=$organized_training_data_dir"usldsc_training_snp_cluster_files.txt"
+
+model_version="vi"
+k="10"
+output_root=$trained_usldsc_model_dir"trained_usldsc_"$model_version"_k_"$k"_"
+echo "OPTIMIZE"
+sh run_usldsc.sh $training_data_study_file $training_data_pairwise_ld_file $training_data_cluster_info_file $k $model_version $output_root
+
+
 
 module load R/3.5.1
 if false; then

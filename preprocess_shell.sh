@@ -3,7 +3,7 @@
 #SBATCH
 #SBATCH --time=5:00:00
 #SBATCH --mem=4GB
-#SBATCH --partition=shared
+#SBATCH --partition=lrgmem
 #SBATCH --nodes=1
 
 
@@ -16,6 +16,7 @@ processed_1k_genomes_genotype_dir="$5"
 processed_ukbb_dir="$6"
 processed_ld_score_dir="$7"
 
+module load python/2.7-anaconda
 
 # Generate file containing only european 1K_genomes sample names
 eur_1k_genomes_samples_file=$processed_1k_genomes_genotype_dir"eur_1k_genomes_samples.txt"

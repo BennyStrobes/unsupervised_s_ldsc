@@ -70,13 +70,15 @@ def generate_ld_scores_and_squared_ld_scores(U, U_squared, pairwise_ld_files, pa
 
 
 class USLDSC(object):
-	def __init__(self, K=5, gamma_U=1.0, gamma_V=1.0, a=1.0, b=1.0, max_iter=1000):
+	def __init__(self, K=5, gamma_U=1.0, gamma_V=1.0, a=1.0, b=1.0, alpha=1e-3, beta=1e-3, max_iter=1000):
 		self.K = K
 		self.max_iter = max_iter
 		self.gamma_U = gamma_U
 		self.gamma_V = gamma_V
 		self.a_prior = a
 		self.b_prior = b
+		self.alpha_prior = alpha
+		self.beta_prior = beta
 	def fit(self, chi_squared_files, study_sample_sizes, pairwise_ld_files, pairwise_ld_indices_files, num_snps, cluster_ukbb_files, cluster_pairwise_ld_matrix_files, cluster_variant_names_files, cluster_variant_neighbor_positions_files, output_root):
 		# Load in data
 		self.chi_squared_files = chi_squared_files
@@ -103,6 +105,7 @@ class USLDSC(object):
 			self.update_U()
 			self.update_theta_V()
 			self.update_theta_U()
+			self.update_tau()
 			# Save results
 			np.save(self.output_root + 'U.npy', self.U_mu)
 			np.save(self.output_root + 'U_S.npy', self.U_mu*self.S_U)
@@ -111,6 +114,7 @@ class USLDSC(object):
 			np.save(self.output_root + 'theta_U.npy', self.theta_U_a/(self.theta_U_a + self.theta_U_b))
 			np.save(self.output_root + 'theta_V.npy', self.theta_V_a/(self.theta_V_a + self.theta_V_b))
 			np.save(self.output_root + 'intercept_mu.npy', self.intercept_mu)
+			np.save(self.output_root + 'tau.npy', self.tau_alpha/self.tau_beta)
 			np.savetxt(self.output_root + 'iter.txt', np.asmatrix(vi_iter), fmt="%s", delimiter='\t')
 
 	def update_theta_V(self):
@@ -124,6 +128,53 @@ class USLDSC(object):
 		for k in range(self.K):
 			self.theta_U_a[k] = self.a_prior + np.sum(self.S_U[:, k])
 			self.theta_U_b[k] = self.b_prior + self.num_snps - np.sum(self.S_U[:, k])
+
+	def update_tau(self):
+		# Compute other useful expectations
+		V_expected_val = self.V_mu*self.S_V
+		V_squared_expected_val = (np.square(self.V_mu) + self.V_var)*self.S_V
+		U_expected_val = self.U_mu*self.S_U
+		U_squared_expected_val = (np.square(self.U_mu) + self.U_var)*self.S_U
+		intercept_expected_val = self.intercept_mu
+		intercept_squared_expected_val = np.square(self.intercept_mu) + self.intercept_var
+		squared_study_sample_size = np.square(self.study_sample_sizes)
+
+		# Initizlize variables to keep track of variance info
+		a_temp = 0
+		b_temp = 0
+		# loop through clusters
+		for cluster_iter in range(self.num_snp_clusters):
+			# For this cluster load in relevent data
+			cluster_pairwise_ld_matrix = np.load(self.cluster_pairwise_ld_matrix_files[cluster_iter])
+			cluster_variant_names = np.load(self.cluster_variant_names_files[cluster_iter])
+			cluster_variant_neighbor_positions = np.load(self.cluster_variant_neighbor_positions_files[cluster_iter])
+			# Number of snps assigned to this snp cluster
+			num_cluster_snps = len(cluster_variant_names)
+			cluster_chi_squared = np.load(self.cluster_ukbb_files[cluster_iter]).reshape((num_cluster_snps, self.num_studies), order='F')
+
+			a_temp = a_temp + ((num_cluster_snps*self.num_studies)/2.0)
+
+			b_temp = b_temp + np.sum(np.square(cluster_chi_squared))/2.0
+			b_temp = b_temp + (num_cluster_snps*self.num_studies)/2.0
+			b_temp = b_temp + (num_cluster_snps*np.sum(intercept_squared_expected_val*squared_study_sample_size))/2.0
+			b_temp = b_temp - np.sum(cluster_chi_squared)
+			b_temp = b_temp - np.sum(cluster_chi_squared*((self.study_sample_sizes)*intercept_expected_val))
+
+			U_expected_cluster = U_expected_val[cluster_variant_names, :]
+			U_squared_expected_cluster = U_squared_expected_val[cluster_variant_names, :]
+			expected_ld_scores = np.dot(cluster_pairwise_ld_matrix, U_expected_cluster)
+			factor_predictions = np.dot(expected_ld_scores, V_expected_val)
+
+			b_temp = b_temp - np.sum((factor_predictions*cluster_chi_squared)*(self.study_sample_sizes))
+			b_temp = b_temp + np.sum((self.study_sample_sizes)*intercept_expected_val)*num_cluster_snps
+			b_temp = b_temp + np.sum(factor_predictions*self.study_sample_sizes)
+			b_temp = b_temp + np.sum(factor_predictions*(squared_study_sample_size*intercept_expected_val))
+
+			b_temp = b_temp + np.sum(np.square(factor_predictions*self.study_sample_sizes))/2.0
+			b_temp = b_temp - np.sum(np.dot(np.dot(np.square(cluster_pairwise_ld_matrix), np.square(U_expected_cluster)), np.square(V_expected_val))*squared_study_sample_size)/2.0
+			b_temp = b_temp + np.sum(np.dot(np.dot(np.square(cluster_pairwise_ld_matrix), U_squared_expected_cluster), V_squared_expected_val)*squared_study_sample_size)/2.0
+		self.tau_alpha = self.alpha_prior + a_temp
+		self.tau_beta = self.beta_prior + b_temp
 
 	def update_U(self):
 		# Compute other useful expectations
@@ -168,9 +219,9 @@ class USLDSC(object):
 
 				current_U = (self.U_mu[snp_name,:]*self.S_U[snp_name,:])
 				other_snps = other_snps - np.dot(cluster_pairwise_ld_matrix[snp_iter,:, np.newaxis], current_U[np.newaxis,:])
+
 				for kk in range(self.K):
 					# This is the update point for U_mk
-
 					a_term = (-self.gamma_U/2.0) - (tau_expected_val/2.0)*sum_neighbor_ld_squared*sum_squared_Vs[kk]
 					b_term = tau_expected_val*np.sum(ld_weighted_chi_squared*V_expected_val[kk,:]*self.study_sample_sizes)
 					b_term = b_term - tau_expected_val*sum_neighbor_ld*sum_Vs[kk]
@@ -204,10 +255,12 @@ class USLDSC(object):
 			# Simple error checking
 			if len(study_chi_sq) != ld_scores.shape[0]:
 				print('assumption error')
+				pdb.set_trace()
 			a_term = (-0.0/2.0) - (tau_expected_val/2.0)*np.square(study_sample_size)*self.num_snps
 			b_term = (tau_expected_val*study_sample_size*np.sum(study_chi_sq)) - (tau_expected_val*study_sample_size) - (tau_expected_val*np.square(study_sample_size)*np.sum(np.dot(ld_scores, V_expected_val[:, study_num])))
 			self.intercept_mu[study_num] = (-b_term)/(2.0*a_term)
 			self.intercept_var[study_num] = (-1.0)/(2.0*a_term)
+
 
 	def update_V(self):
 		# Calculate expectation of ld scores and squared ld scores
@@ -228,6 +281,7 @@ class USLDSC(object):
 				a_term = (-self.gamma_V/2.0) - (tau_expected_val/2.0)*np.square(study_sample_size)*np.sum(squared_ld_scores[:, kk])
 
 				other_components = np.dot(ld_scores, (self.V_mu[:,study_num]*self.S_V[:, study_num])) - ld_scores[:,kk]*(self.V_mu[kk,study_num]*self.S_V[kk, study_num])
+
 				b_term = tau_expected_val*study_sample_size*np.sum(study_chi_sq*ld_scores[:,kk] - ld_scores[:,kk] - study_sample_size*self.intercept_mu[study_num]*ld_scores[:,kk] - study_sample_size*ld_scores[:,kk]*other_components)
 				# Update global model parameters
 				self.V_mu[kk, study_num] = (-b_term)/(2.0*a_term)

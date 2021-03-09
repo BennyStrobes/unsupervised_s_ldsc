@@ -109,15 +109,16 @@ training_data_cluster_info_file=$organized_training_data_dir"usldsc_training_snp
 
 model_version="vi"
 k="10"
-output_root=$trained_usldsc_model_dir"trained_usldsc_"$model_version"_k_"$k"_temp_"
-echo "OPTIMIZE"
-sh run_usldsc.sh $training_data_study_file $training_data_pairwise_ld_file $training_data_cluster_info_file $k $model_version $output_root
-
+output_root=$trained_usldsc_model_dir"trained_usldsc_"$model_version"_k_"$k"_temp2_"
+echo "OPTIMIZE Non-sim"
+if false; then
+sbatch run_usldsc.sh $training_data_study_file $training_data_pairwise_ld_file $training_data_cluster_info_file $k $model_version $output_root
+fi
 
 
 module load R/3.5.1
 if false; then
-Rscript visualize_usldsc_results.R $trained_usldsc_model_dir $processed_ukbb_dir $usldsc_results_dir
+Rscript visualize_usldsc_results.R $trained_usldsc_model_dir $processed_ukbb_dir $usldsc_visualize_results_dir
 fi
 
 

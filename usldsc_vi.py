@@ -257,7 +257,7 @@ class USLDSC(object):
 				print('assumption error')
 				pdb.set_trace()
 			a_term = (-0.0/2.0) - (tau_expected_val/2.0)*np.square(study_sample_size)*self.num_snps
-			b_term = (tau_expected_val*study_sample_size*np.sum(study_chi_sq)) - (tau_expected_val*study_sample_size) - (tau_expected_val*np.square(study_sample_size)*np.sum(np.dot(ld_scores, V_expected_val[:, study_num])))
+			b_term = (tau_expected_val*study_sample_size*np.sum(study_chi_sq)) - (tau_expected_val*study_sample_size*self.num_snps) - (tau_expected_val*np.square(study_sample_size)*np.sum(np.dot(ld_scores, V_expected_val[:, study_num])))
 			self.intercept_mu[study_num] = (-b_term)/(2.0*a_term)
 			self.intercept_var[study_num] = (-1.0)/(2.0*a_term)
 
@@ -397,7 +397,7 @@ class USLDSC(object):
 		self.U_mu = np.random.randn(self.num_snps, self.K)
 		self.U_var = np.ones((self.num_snps, self.K))
 		for k in range(self.K):
-			self.U_mu[:,k] = ((self.U_mu[:,k]-np.mean(self.U_mu[:,k]))/(10.0*np.std(self.U_mu[:,k])))
+			self.U_mu[:,k] = ((self.U_mu[:,k]-np.mean(self.U_mu[:,k]))/(100.0*np.std(self.U_mu[:,k])))
 		self.S_U = np.ones((self.num_snps, self.K))
 		
 		# Smart init for Residual variance

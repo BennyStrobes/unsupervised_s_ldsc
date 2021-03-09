@@ -20,8 +20,9 @@ module load python/2.7-anaconda
 
 # Generate file containing only european 1K_genomes sample names
 eur_1k_genomes_samples_file=$processed_1k_genomes_genotype_dir"eur_1k_genomes_samples.txt"
+if false; then
 python generate_european_1k_genomes_file.py $one_k_genomes_sample_annotation_file $eur_1k_genomes_samples_file
-
+fi
 
 # ukbb_studies_file to contain column for sample size
 updated_ukbb_studies_file=$processed_ukbb_dir"updated_ukbb_studies.txt"

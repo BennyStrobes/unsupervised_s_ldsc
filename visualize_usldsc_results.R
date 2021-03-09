@@ -82,13 +82,13 @@ studies_file <- paste0(processed_ukbb_dir, "updated_ukbb_studies.txt")
 study_data = read.table(studies_file, header=TRUE)
 
 
-studies = as.character(study_data$study)
+studies = as.character(study_data$study_descriptor)
 
-for (study_iter in 1:length(studies)) {
-	studies[study_iter] = as.character(paste0(studies[study_iter], "_", study_iter))
-}
+#for (study_iter in 1:length(studies)) {
+#	studies[study_iter] = as.character(paste0(studies[study_iter], "_", study_iter))
+#}
 
-study_category <- as.character(read.table("/work-zfs/abattle4/bstrober/unsupervised_s_ldsc/input_data/studies_with_category.tsv",header=TRUE,sep="\t",quote="")$category)
+#study_category <- as.character(read.table("/work-zfs/abattle4/bstrober/unsupervised_s_ldsc/input_data/studies_with_category.tsv",header=TRUE,sep="\t",quote="")$category)
 
 
 ############################
@@ -97,9 +97,9 @@ study_category <- as.character(read.table("/work-zfs/abattle4/bstrober/unsupervi
 
 
 # Make UMAP Scatter of factor matix colored by study category
-output_file <- paste0(visualization_dir, "factor_umap_colored_by_study_category.pdf")
-factor_umap <- factor_umap_colored_by_categorical(factors, study_category, "study_category")
-ggsave(factor_umap, file=output_file, width=7.0, height=5.0, units="in")
+#output_file <- paste0(visualization_dir, "factor_umap_colored_by_study_category.pdf")
+#factor_umap <- factor_umap_colored_by_categorical(factors, study_category, "study_category")
+#ggsave(factor_umap, file=output_file, width=7.0, height=5.0, units="in")
 
 # Make heatmap of factor matix
 output_file <- paste0(visualization_dir, "study_clustered_factor_heatmap.pdf")

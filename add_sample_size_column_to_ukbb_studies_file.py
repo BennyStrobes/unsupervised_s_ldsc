@@ -60,14 +60,15 @@ for line in f:
 	data = line.split('\t')
 	if head_count == 0:
 		head_count = head_count + 1
-		t.write(line + '\t' + 'sample_size' + '\n')
+		t.write('study\tfile_name\tsample_size\tstudy_descriptor\n')
 		continue
 	study_name = data[0]
 	study_file = data[1]
+	study_descriptor = data[2]
 	if '/' in study_name:
 		study_name = '_'.join(study_name.split('/'))
 	print(study_name)
 	study_sample_size = get_study_sample_size(study_file)
-	t.write(study_name + '\t' + study_file + '\t' + study_sample_size + '\n')
+	t.write(study_name + '\t' + study_file + '\t' + study_sample_size + '\t' + study_descriptor + '\n')
 f.close()
 t.close()

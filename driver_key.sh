@@ -109,11 +109,10 @@ training_data_cluster_info_file=$organized_training_data_dir"usldsc_training_snp
 
 model_version="vi"
 k="10"
-output_root=$trained_usldsc_model_dir"trained_usldsc_"$model_version"_k_"$k"_temp2_"
+output_root=$trained_usldsc_model_dir"trained_usldsc_"$model_version"_k_"$k"_temp_gamma_"
 echo "OPTIMIZE Non-sim"
-if false; then
-sbatch run_usldsc.sh $training_data_study_file $training_data_pairwise_ld_file $training_data_cluster_info_file $k $model_version $output_root
-fi
+sh run_usldsc.sh $training_data_study_file $training_data_pairwise_ld_file $training_data_cluster_info_file $k $model_version $output_root
+
 
 
 module load R/3.5.1

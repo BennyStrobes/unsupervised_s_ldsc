@@ -72,7 +72,7 @@ def run_model(studies_file, pairwise_ld_summary_file, training_data_cluster_info
 		usldsc = usldsc_als.USLDSC(K=k)
 		usldsc.fit(chi_squared_files=chi_squared_files, study_sample_sizes=study_sample_sizes, pairwise_ld_files=pairwise_ld_files, pairwise_ld_indices_files=pairwise_ld_indices_files, num_snps=num_snps, cluster_ukbb_files=cluster_ukbb_files, cluster_pairwise_ld_matrix_files=cluster_pairwise_ld_matrix_files, cluster_variant_names_files=cluster_variant_names_files, cluster_variant_neighbor_positions_files=cluster_variant_neighbor_positions_files)
 	elif model_version == 'vi':
-		usldsc = usldsc_vi.USLDSC(K=k, gamma_U=1.0, gamma_V=1.0)
+		usldsc = usldsc_vi.USLDSC(K=k)
 		usldsc.fit(chi_squared_files=chi_squared_files, study_sample_sizes=study_sample_sizes, pairwise_ld_files=pairwise_ld_files, pairwise_ld_indices_files=pairwise_ld_indices_files, num_snps=num_snps, cluster_ukbb_files=cluster_ukbb_files, cluster_pairwise_ld_matrix_files=cluster_pairwise_ld_matrix_files, cluster_variant_names_files=cluster_variant_names_files, cluster_variant_neighbor_positions_files=cluster_variant_neighbor_positions_files, output_root=output_root)
 	pdb.set_trace()
 

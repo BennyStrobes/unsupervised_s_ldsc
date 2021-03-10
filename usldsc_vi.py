@@ -79,12 +79,12 @@ class USLDSC(object):
 		self.beta_prior = beta
 	def fit(self, chi_squared_files, study_sample_sizes, pairwise_ld_files, pairwise_ld_indices_files, num_snps, cluster_ukbb_files, cluster_pairwise_ld_matrix_files, cluster_variant_names_files, cluster_variant_neighbor_positions_files, output_root):
 		# Load in data
-		self.chi_squared_files = chi_squared_files
+		#self.chi_squared_files = chi_squared_files
 		self.study_sample_sizes = study_sample_sizes
 		self.study_sample_sizes = self.study_sample_sizes/np.mean(self.study_sample_sizes)
 		self.num_studies = len(study_sample_sizes)
-		self.pairwise_ld_files = pairwise_ld_files
-		self.pairwise_ld_indices_files = pairwise_ld_indices_files
+		#self.pairwise_ld_files = pairwise_ld_files
+		#self.pairwise_ld_indices_files = pairwise_ld_indices_files
 		self.num_snps = num_snps
 		self.cluster_ukbb_files = cluster_ukbb_files
 		self.cluster_pairwise_ld_matrix_files = cluster_pairwise_ld_matrix_files
@@ -92,35 +92,136 @@ class USLDSC(object):
 		self.cluster_variant_neighbor_positions_files = cluster_variant_neighbor_positions_files
 		self.num_snp_clusters = len(cluster_variant_names_files) 
 		self.output_root = output_root
+
+		self.filter_clusters()
+		self.simulate_data()
 		# Initialize variables
 		self.initialize_variables()
+		print('corrected simulation')
+		np.save(self.output_root + 'sim_V.npy', self.V_sim)
+		np.save(self.output_root + 'sim_V.npy', self.U_sim)
+		np.save(self.output_root + 'sim_intercept.npy', self.intercept_sim)
+		np.save(self.output_root + 'sim_tau.npy', self.tau_sim)
+		np.save(self.output_root + 'sim_chi_sq.npy', self.chi_squared_sim)
+		np.save(self.output_root + 'sim_Y.npy', self.U_sim)
 		# Run iterative optimization
 		for vi_iter in range(self.max_iter):
 			print('ITERATION: ' + str(vi_iter) + '  ' + str(time.time()))
 			# Perform Updates
-			self.update_intercept()
-			print('int')
-			self.update_V()
-			print('V')
+			#self.update_intercept()
+			#self.update_V()
 			self.update_U()
-			print('U')
-			self.update_theta_V()
+			#self.update_theta_V()
 			self.update_theta_U()
 			self.update_gamma_U()
-			self.update_gamma_V()
+			#self.update_gamma_V()
 			self.update_tau()
+			print(self.theta_U_a/(self.theta_U_a + self.theta_U_b))
 			# Save results
 			np.save(self.output_root + 'U.npy', self.U_mu)
 			np.save(self.output_root + 'U_S.npy', self.U_mu*self.S_U)
-			np.save(self.output_root + 'V.npy', self.V_mu)
-			np.save(self.output_root + 'V_S.npy', self.V_mu*self.S_V)
+			#np.save(self.output_root + 'V.npy', self.V_mu)
+			#np.save(self.output_root + 'V_S.npy', self.V_mu*self.S_V)
 			np.save(self.output_root + 'theta_U.npy', self.theta_U_a/(self.theta_U_a + self.theta_U_b))
-			np.save(self.output_root + 'theta_V.npy', self.theta_V_a/(self.theta_V_a + self.theta_V_b))
-			np.save(self.output_root + 'intercept_mu.npy', self.intercept_mu)
+			#np.save(self.output_root + 'theta_V.npy', self.theta_V_a/(self.theta_V_a + self.theta_V_b))
+			#np.save(self.output_root + 'intercept_mu.npy', self.intercept_mu)
 			np.save(self.output_root + 'tau.npy', self.tau_alpha/self.tau_beta)
 			np.save(self.output_root + 'gamma_U.npy', self.gamma_U_alpha/self.gamma_U_beta)
-			np.save(self.output_root + 'gamma_V.npy', self.gamma_V_alpha/self.gamma_V_beta)
+			#np.save(self.output_root + 'gamma_V.npy', self.gamma_V_alpha/self.gamma_V_beta)
 			np.savetxt(self.output_root + 'iter.txt', np.asmatrix(vi_iter), fmt="%s", delimiter='\t')
+			if vi_iter > 400:
+				U_pred = self.U_mu*self.S_U
+				ld_scores_pred = np.zeros((self.num_snps, self.K))
+				for cluster_iter in range(self.num_snp_clusters):
+					# For this cluster load in relevent data
+					cluster_pairwise_ld_matrix = np.load(self.cluster_pairwise_ld_matrix_files[cluster_iter])
+					cluster_variant_names = np.load(self.cluster_variant_names_files[cluster_iter])
+					ld_scores_pred[cluster_variant_names, :] = np.dot(cluster_pairwise_ld_matrix, U_pred[cluster_variant_names,:])
+				pdb.set_trace()
+
+	def simulate_data(self):
+		self.V_sim = np.random.randn(self.K, self.num_studies)
+		self.intercept_sim = np.random.randn(self.num_studies) 
+		self.intercept_sim = self.intercept_sim - np.min(self.intercept_sim)
+		self.U_sim = np.random.randn(self.num_snps, self.K)
+		self.theta_U_sim = np.zeros(self.K)
+		self.theta_U_sim[0] = .05
+		self.theta_U_sim[1] = .01
+		self.theta_U_sim[2] = .02
+		self.theta_U_sim[3] = .1
+		self.theta_U_sim[4] = .05
+		self.theta_U_sim[5] = .05
+		self.theta_U_sim[6] = .1
+		self.theta_U_sim[7] = .2
+		self.theta_U_sim[8] = .1
+		self.theta_U_sim[9] = .01
+		self.observed_theta_U_sim = []
+		for k in range(self.K):
+			probs = np.random.binomial(n=1, p=self.theta_U_sim[k],size=len(self.U_sim[:, k]))
+			self.U_sim[:, k] = self.U_sim[:,k]*probs
+			self.observed_theta_U_sim.append(np.sum(probs)*1.0/len(probs))
+		self.observed_theta_U_sim = np.asarray(self.observed_theta_U_sim)
+		print(self.observed_theta_U_sim)
+		#	self.U_sim[:,k] = ((self.U_sim[:,k]-np.mean(self.U_sim[:,k]))/(10.0*np.std(self.U_sim[:,k])))
+		self.tau_sim = .1
+		#ld_scores = generate_ld_scores(self.U_sim, self.pairwise_ld_files, self.pairwise_ld_indices_files)
+		ld_scores = np.zeros((self.num_snps, self.K))
+		for cluster_iter in range(self.num_snp_clusters):
+			# For this cluster load in relevent data
+			cluster_pairwise_ld_matrix = np.load(self.cluster_pairwise_ld_matrix_files[cluster_iter])
+			cluster_variant_names = np.load(self.cluster_variant_names_files[cluster_iter])
+			ld_scores[cluster_variant_names, :] = np.dot(cluster_pairwise_ld_matrix, self.U_sim[cluster_variant_names,:])
+
+		self.ld_scores_sim = np.copy(ld_scores)
+		factor_predicted = np.dot(ld_scores, self.V_sim)
+		self.chi_squared_sim = np.zeros((self.num_snps, self.num_studies))
+		# Perform VI updates independently for each study
+		for study_num in range(self.num_studies):
+			study_sample_size = self.study_sample_sizes[study_num]
+
+			study_means = 1.0 + study_sample_size*self.intercept_sim[study_num] + study_sample_size*factor_predicted[:, study_num]
+			self.chi_squared_sim[:, study_num] = np.random.normal(study_means, scale=np.sqrt(1.0/self.tau_sim))
+
+
+
+	def filter_clusters(self):
+		# self.num_snps = num_snps (CHECK)
+		# self.cluster_ukbb_files (CHECK)
+		# self.cluster_pairwise_ld_matrix_files (CHECK)
+		# self.cluster_variant_names_files 
+		# self.cluster_variant_neighbor_positions_files (CHECK)
+		# self.num_snp_clusters (CHECK)
+
+		# First get new cluster indexes
+		new_cluster_indexes = []
+		counter = 0
+		for cluster_iter in range(self.num_snp_clusters):
+			if counter < 1 and len(np.load(self.cluster_variant_names_files[cluster_iter])) > 1000:
+				new_cluster_indexes.append(cluster_iter)
+				counter = counter + 1
+		new_cluster_indexes = np.asarray(new_cluster_indexes)
+
+		self.cluster_ukbb_files = self.cluster_ukbb_files[new_cluster_indexes]
+		self.cluster_pairwise_ld_matrix_files = self.cluster_pairwise_ld_matrix_files[new_cluster_indexes]
+		self.cluster_variant_neighbor_positions_files = self.cluster_variant_neighbor_positions_files[new_cluster_indexes]
+		self.num_snp_clusters = len(new_cluster_indexes)
+		self.num_snps = 0
+		variant_counter = 0
+		new_cluster_variant_names_files = []
+		for index in new_cluster_indexes:
+			cluster_variant_names = np.load(self.cluster_variant_names_files[index])
+			self.num_snps = self.num_snps + len(cluster_variant_names)
+			
+			new_cluster_variant_names = []
+			for variant_name in cluster_variant_names:
+				new_cluster_variant_names.append(variant_counter)
+				variant_counter = variant_counter + 1
+			new_cluster_variant_names = np.asarray(new_cluster_variant_names)
+			file_name = 'cluster_' + str(index) + '_variant_names.npy'
+			np.save(file_name, new_cluster_variant_names)
+			new_cluster_variant_names_files.append(file_name)
+		new_cluster_variant_names_files = np.asarray(new_cluster_variant_names_files)
+		self.cluster_variant_names_files = np.copy(new_cluster_variant_names_files)
 
 	def update_gamma_U(self):
 		U_var_s_0 = self.gamma_U_beta/self.gamma_U_alpha
@@ -165,7 +266,8 @@ class USLDSC(object):
 			cluster_variant_neighbor_positions = np.load(self.cluster_variant_neighbor_positions_files[cluster_iter])
 			# Number of snps assigned to this snp cluster
 			num_cluster_snps = len(cluster_variant_names)
-			cluster_chi_squared = np.load(self.cluster_ukbb_files[cluster_iter]).reshape((num_cluster_snps, self.num_studies), order='F')
+			# cluster_chi_squared = np.load(self.cluster_ukbb_files[cluster_iter]).reshape((num_cluster_snps, self.num_studies), order='F')
+			cluster_chi_squared = np.copy(self.chi_squared_sim[cluster_variant_names, :])
 
 			a_temp = a_temp + ((num_cluster_snps*self.num_studies)/2.0)
 
@@ -217,14 +319,13 @@ class USLDSC(object):
 			cluster_variant_neighbor_positions = np.load(self.cluster_variant_neighbor_positions_files[cluster_iter])
 			# Number of snps assigned to this snp cluster
 			num_cluster_snps = len(cluster_variant_names)
-			cluster_chi_squared = np.load(self.cluster_ukbb_files[cluster_iter]).reshape((num_cluster_snps, self.num_studies), order='F')
+			#cluster_chi_squared_ol = np.load(self.cluster_ukbb_files[cluster_iter]).reshape((num_cluster_snps, self.num_studies), order='F')
+			cluster_chi_squared = np.copy(self.chi_squared_sim[cluster_variant_names, :])
 
 			predicted_U = (self.U_mu[cluster_variant_names,:]*self.S_U[cluster_variant_names,:])
 			other_snps = np.dot(cluster_pairwise_ld_matrix, predicted_U)
-			if num_cluster_snps == 1:
-				continue
 			# Loop through snps
-			for snp_iter in range(num_cluster_snps):
+			for snp_iter in np.random.permutation(range(num_cluster_snps)):
 				# Extract relevent info from snp
 				snp_name = cluster_variant_names[snp_iter]
 				snp_neighbor_indices = cluster_variant_neighbor_positions[snp_iter]
@@ -419,13 +520,12 @@ class USLDSC(object):
 			'''
 	def initialize_variables(self):
 		# initialization of V doesn't matter as we learn V on the first step conditioned on U
-		self.V_mu = np.zeros((self.K, self.num_studies))
-		self.V_mu = np.random.randn(self.K, self.num_studies)
-		self.V_var = np.ones((self.K, self.num_studies))
+		self.V_mu = np.copy(self.V_sim)
+		self.V_var = np.ones((self.K, self.num_studies))*1e-10
 		self.S_V = np.ones((self.K, self.num_studies))
 		# Initialization of intercept doesn't matter as we learn intercept in the first step, conditioned on U
-		self.intercept_mu = np.zeros(self.num_studies)
-		self.intercept_var = np.ones(self.num_studies)
+		self.intercept_mu = self.intercept_sim
+		self.intercept_var = np.ones(self.num_studies)*1e-10
 		# Initialization of U DOES matter
 		self.U_mu = np.random.randn(self.num_snps, self.K)
 		self.U_var = np.ones((self.num_snps, self.K))
@@ -433,6 +533,7 @@ class USLDSC(object):
 			self.U_mu[:,k] = ((self.U_mu[:,k]-np.mean(self.U_mu[:,k]))/(10.0*np.std(self.U_mu[:,k])))
 		self.S_U = np.ones((self.num_snps, self.K))
 		
+		'''
 		# Smart init for Residual variance
 		ld_score = generate_ld_scores(np.ones((self.U_mu.shape[0],1)), self.pairwise_ld_files, self.pairwise_ld_indices_files)
 		# Perform regression analysis independently for each study
@@ -450,20 +551,20 @@ class USLDSC(object):
 			residual_var = np.sum(np.square(reg.predict(ld_score*study_sample_size) - (study_chi_sq-1.0)))/(len(study_chi_sq) -2)
 			resid_varz.append(residual_var)
 		mean_resid_var = np.mean(resid_varz)
+		'''
 		# Variance params
 		# resid var
 		self.tau_alpha = 1.0
 		self.tau_beta = 1.0
-		self.tau_beta = mean_resid_var
 		# U var
 		self.gamma_U_alpha = 1.0
 		self.gamma_U_beta = 1.0
 		# V var
-		self.gamma_V_alpha = 1.0
-		self.gamma_V_beta = 1.0
+		#self.gamma_V_alpha = 1.0
+		#self.gamma_V_beta = 1.0
 
 		# Sparsity parameters
 		self.theta_U_a = np.ones(self.K)*(.2)
 		self.theta_U_b = np.ones(self.K)
-		self.theta_V_a = np.ones(self.K)*10.0
-		self.theta_V_b = np.ones(self.K)
+		#self.theta_V_a = np.ones(self.K)*10.0
+		#self.theta_V_b = np.ones(self.K)

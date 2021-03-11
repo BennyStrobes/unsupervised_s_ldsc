@@ -99,11 +99,8 @@ class USLDSC(object):
 			print('ITERATION: ' + str(vi_iter) + '  ' + str(time.time()))
 			# Perform Updates
 			self.update_intercept()
-			print('int')
 			self.update_V()
-			print('V')
 			self.update_U()
-			print('U')
 			self.update_theta_V()
 			self.update_theta_U()
 			self.update_gamma_U()
@@ -221,10 +218,8 @@ class USLDSC(object):
 
 			predicted_U = (self.U_mu[cluster_variant_names,:]*self.S_U[cluster_variant_names,:])
 			other_snps = np.dot(cluster_pairwise_ld_matrix, predicted_U)
-			if num_cluster_snps == 1:
-				continue
 			# Loop through snps
-			for snp_iter in range(num_cluster_snps):
+			for snp_iter in np.random.permutation(range(num_cluster_snps)):
 				# Extract relevent info from snp
 				snp_name = cluster_variant_names[snp_iter]
 				snp_neighbor_indices = cluster_variant_neighbor_positions[snp_iter]
@@ -459,11 +454,12 @@ class USLDSC(object):
 		self.gamma_U_alpha = 1.0
 		self.gamma_U_beta = 1.0
 		# V var
+		# self.gamma_V_alpha = 10000.0
 		self.gamma_V_alpha = 1.0
 		self.gamma_V_beta = 1.0
 
 		# Sparsity parameters
 		self.theta_U_a = np.ones(self.K)*(.2)
 		self.theta_U_b = np.ones(self.K)
-		self.theta_V_a = np.ones(self.K)*10.0
+		self.theta_V_a = np.ones(self.K)
 		self.theta_V_b = np.ones(self.K)

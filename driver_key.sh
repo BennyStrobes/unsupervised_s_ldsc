@@ -64,6 +64,29 @@ Rscript visualize_processed_data.R $processed_ld_score_dir $visualize_processed_
 fi
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ########################################
 # Run unsupervised S-LDSC
 ########################################
@@ -109,48 +132,94 @@ training_data_cluster_info_file=$organized_training_data_dir"usldsc_training_snp
 
 model_version="vi"
 k="10"
-output_root=$trained_usldsc_model_dir"trained_usldsc_"$model_version"_k_"$k"_temp_gamma_other_init_"
-if false; then
 echo "OPTIMIZE Non-sim"
-sbatch run_usldsc.sh $training_data_study_file $training_data_pairwise_ld_file $training_data_cluster_info_file $k $model_version $output_root
-fi
+
+b_v="10"
+output_root=$trained_usldsc_model_dir"trained_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_"
+sh run_usldsc.sh $training_data_study_file $training_data_pairwise_ld_file $training_data_cluster_info_file $k $model_version $output_root $b_v
 
 
-model_name="trained_usldsc_"$model_version"_k_"$k"_temp_gamma_"
+if false; then
+
+b_v="20"
+output_root=$trained_usldsc_model_dir"trained_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_"
+sbatch run_usldsc.sh $training_data_study_file $training_data_pairwise_ld_file $training_data_cluster_info_file $k $model_version $output_root $b_v
+
+b_v="40"
+output_root=$trained_usldsc_model_dir"trained_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_"
+sbatch run_usldsc.sh $training_data_study_file $training_data_pairwise_ld_file $training_data_cluster_info_file $k $model_version $output_root $b_v
+
+b_v="60"
+output_root=$trained_usldsc_model_dir"trained_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_"
+sbatch run_usldsc.sh $training_data_study_file $training_data_pairwise_ld_file $training_data_cluster_info_file $k $model_version $output_root $b_v
+
+b_v="80"
+output_root=$trained_usldsc_model_dir"trained_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_"
+sbatch run_usldsc.sh $training_data_study_file $training_data_pairwise_ld_file $training_data_cluster_info_file $k $model_version $output_root $b_v
+
+b_v="100"
+output_root=$trained_usldsc_model_dir"trained_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_"
+sbatch run_usldsc.sh $training_data_study_file $training_data_pairwise_ld_file $training_data_cluster_info_file $k $model_version $output_root $b_v
+
+
+b_v="80"
+model_name="trained_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_"
 sh visualize_usldsc_results.sh $trained_usldsc_model_dir $model_name $training_data_pairwise_ld_file $usldsc_visualize_results_dir $processed_ukbb_dir
 
-
-
-
-
-
-
-
-#########################
-# S-LDSC experimentation
-##########################
-
-
-
-if false; then
-temp_genotype_dir="/work-zfs/abattle4/bstrober/tools/ldsc/1kg_eur/"
-
-module load python/2.7-anaconda
-
-python ldsc.py --bfile ${temp_genotype_dir}22 --l2 --l2-pairwise --chunk-size 1 --ld-wind-cm 1 --out 22
 fi
 
 
 
-module load python/2.7-anaconda
 
+
+
+
+
+
+
+
+
+
+########################################
+# Enrichment analysis for results of unsupervised S-LDSC
+########################################
+
+# Input data files
+#####################
+
+# from ashton
+# baseline_sldsc_annotation_dir="/work-zfs/abattle4/lab_data/genomic_annotation_data/hg19/ldsc_annotations/baselineLF_v2.2.UKB/annots/"
+
+# Directory containing baseline sldsc annotations
+# Downloaded from https://alkesgroup.broadinstitute.org/LDSCORE/1000G_Phase3_EAS_baselineLD_v2.2_ldscores.tgz on 3/11/21
+baseline_sldsc_annotation_dir="/work-zfs/abattle4/lab_data/ldsc_baseline_anno/"
+
+# Directory containing sldsc cell type annotations
+# Downloaded from https://alkesgroup.broadinstitute.org on 3/11/21
+sldsc_cell_type_annotation_dir="/work-zfs/abattle4/lab_data/s_ldsc_cell_type_groups/"
+
+
+# Directory containing CADD annotations for UKBB
+cadd_annotation_dir="/work-zfs/abattle4/lab_data/genomic_annotation_data/hg19/cadd_annotations/imputed_cadd_annots_ukbb.tsv"
+
+
+
+
+# Output directories
+#####################
+# root directory for analysis related to unsupervised-s-ldsc
+enrichment_root="/work-zfs/abattle4/bstrober/unsupervised_s_ldsc/enrichment/"
+
+# Directory containing genomic annotations assigned to variants used in U-LDSC
+genomic_annotation_dir=$enrichment_root"genomic_annotations/"
+
+
+model_name="trained_usldsc_vi_k_10_temp_gamma_"
+
+chrom_num="4"
 if false; then
-python munge_sumstats.py --sumstats /work-zfs/abattle4/bstrober/tools/ldsc/GIANT_BMI_Speliotes2010_publicrelease_HapMapCeuFreq.txt --merge-alleles /work-zfs/abattle4/bstrober/tools/ldsc/w_hm3.snplist --out BMI --a1-inc
+sh extract_genomic_annotations_per_chromosome.sh $chrom_num $genomic_annotation_dir $processed_1k_genomes_genotype_dir $baseline_sldsc_annotation_dir $sldsc_cell_type_annotation_dir $trained_usldsc_model_dir $model_name
 fi
 
 
 
-if false; then
-python ldsc.py --h2 BMI.sumstats.gz --ref-ld-chr /work-zfs/abattle4/bstrober/tools/ldsc/baseline/baseline. --w-ld-chr /work-zfs/abattle4/bstrober/tools/ldsc/weights_hm3_no_hla/weights. --overlap-annot --frqfile-chr /work-zfs/abattle4/bstrober/tools/ldsc/1000G_frq/1000G.mac5eur. --out BMI_baseline
-
-fi

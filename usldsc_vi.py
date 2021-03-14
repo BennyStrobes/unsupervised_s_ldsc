@@ -70,11 +70,13 @@ def generate_ld_scores_and_squared_ld_scores(U, U_squared, pairwise_ld_files, pa
 
 
 class USLDSC(object):
-	def __init__(self, K=5, a=1.0, b=1.0, alpha=1e-3, beta=1e-3, max_iter=1000):
+	def __init__(self, K=5, a_u=1.0, b_u=1.0, a_v=1.0, b_v=1.0, alpha=1e-3, beta=1e-3, max_iter=1000):
 		self.K = K
 		self.max_iter = max_iter
-		self.a_prior = a
-		self.b_prior = b
+		self.a_u_prior = a_u
+		self.b_u_prior = b_u
+		self.a_v_prior = a_v
+		self.b_v_prior = b_v
 		self.alpha_prior = alpha
 		self.beta_prior = beta
 	def fit(self, chi_squared_files, study_sample_sizes, pairwise_ld_files, pairwise_ld_indices_files, num_snps, cluster_ukbb_files, cluster_pairwise_ld_matrix_files, cluster_variant_names_files, cluster_variant_neighbor_positions_files, output_root):
@@ -132,14 +134,14 @@ class USLDSC(object):
 	def update_theta_V(self):
 		# Loop through factors
 		for k in range(self.K):
-			self.theta_V_a[k] = self.a_prior + np.sum(self.S_V[k, :])
-			self.theta_V_b[k] = self.b_prior + self.num_studies - np.sum(self.S_V[k, :])
+			self.theta_V_a[k] = self.a_v_prior + np.sum(self.S_V[k, :])
+			self.theta_V_b[k] = self.b_v_prior + self.num_studies - np.sum(self.S_V[k, :])
 
 	def update_theta_U(self):
 		# Loop through factors
 		for k in range(self.K):
-			self.theta_U_a[k] = self.a_prior + np.sum(self.S_U[:, k])
-			self.theta_U_b[k] = self.b_prior + self.num_snps - np.sum(self.S_U[:, k])
+			self.theta_U_a[k] = self.a_u_prior + np.sum(self.S_U[:, k])
+			self.theta_U_b[k] = self.b_u_prior + self.num_snps - np.sum(self.S_U[:, k])
 
 	def update_tau(self):
 		# Compute other useful expectations
@@ -454,12 +456,11 @@ class USLDSC(object):
 		self.gamma_U_alpha = 1.0
 		self.gamma_U_beta = 1.0
 		# V var
-		# self.gamma_V_alpha = 10000.0
 		self.gamma_V_alpha = 1.0
 		self.gamma_V_beta = 1.0
 
 		# Sparsity parameters
 		self.theta_U_a = np.ones(self.K)*(.2)
 		self.theta_U_b = np.ones(self.K)
-		self.theta_V_a = np.ones(self.K)
+		self.theta_V_a = np.ones(self.K)*(.2)
 		self.theta_V_b = np.ones(self.K)

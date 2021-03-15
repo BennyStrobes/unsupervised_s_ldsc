@@ -133,11 +133,30 @@ training_data_cluster_info_file=$organized_training_data_dir"usldsc_training_snp
 model_version="vi"
 k="10"
 echo "OPTIMIZE Non-sim"
+if false; then
+b_v="0"
+output_root=$trained_usldsc_model_dir"trained_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_shared_tau_"
+sbatch run_usldsc.sh $training_data_study_file $training_data_pairwise_ld_file $training_data_cluster_info_file $k $model_version $output_root $b_v
 
-b_v="10"
-output_root=$trained_usldsc_model_dir"trained_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_"
-sh run_usldsc.sh $training_data_study_file $training_data_pairwise_ld_file $training_data_cluster_info_file $k $model_version $output_root $b_v
 
+b_v="50"
+output_root=$trained_usldsc_model_dir"trained_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_shared_tau_"
+sbatch run_usldsc.sh $training_data_study_file $training_data_pairwise_ld_file $training_data_cluster_info_file $k $model_version $output_root $b_v
+
+
+b_v="100"
+output_root=$trained_usldsc_model_dir"trained_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_shared_tau_"
+sbatch run_usldsc.sh $training_data_study_file $training_data_pairwise_ld_file $training_data_cluster_info_file $k $model_version $output_root $b_v
+
+
+b_v="150"
+output_root=$trained_usldsc_model_dir"trained_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_shared_tau_"
+sbatch run_usldsc.sh $training_data_study_file $training_data_pairwise_ld_file $training_data_cluster_info_file $k $model_version $output_root $b_v
+
+b_v="200"
+output_root=$trained_usldsc_model_dir"trained_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_shared_tau_"
+sbatch run_usldsc.sh $training_data_study_file $training_data_pairwise_ld_file $training_data_cluster_info_file $k $model_version $output_root $b_v
+fi
 
 if false; then
 
@@ -161,12 +180,12 @@ b_v="100"
 output_root=$trained_usldsc_model_dir"trained_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_"
 sbatch run_usldsc.sh $training_data_study_file $training_data_pairwise_ld_file $training_data_cluster_info_file $k $model_version $output_root $b_v
 
-
-b_v="80"
-model_name="trained_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_"
+fi
+b_v="0"
+model_name="trained_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_shared_tau_"
 sh visualize_usldsc_results.sh $trained_usldsc_model_dir $model_name $training_data_pairwise_ld_file $usldsc_visualize_results_dir $processed_ukbb_dir
 
-fi
+
 
 
 

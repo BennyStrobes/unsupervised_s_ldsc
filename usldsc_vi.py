@@ -142,8 +142,54 @@ class USLDSC(object):
 		for k in range(self.K):
 			self.theta_U_a[k] = self.a_u_prior + np.sum(self.S_U[:, k])
 			self.theta_U_b[k] = self.b_u_prior + self.num_snps - np.sum(self.S_U[:, k])
-
 	def update_tau(self):
+		# Compute other useful expectations
+		V_expected_val = self.V_mu*self.S_V
+		V_squared_expected_val = (np.square(self.V_mu) + self.V_var)*self.S_V
+		U_expected_val = self.U_mu*self.S_U
+		U_squared_expected_val = (np.square(self.U_mu) + self.U_var)*self.S_U
+		intercept_expected_val = self.intercept_mu
+		intercept_squared_expected_val = np.square(self.intercept_mu) + self.intercept_var
+		squared_study_sample_size = np.square(self.study_sample_sizes)
+
+		# Initizlize variables to keep track of variance info
+		a_temp = np.zeros(self.num_studies)
+		b_temp = np.zeros(self.num_studies)
+		# loop through clusters
+		for cluster_iter in range(self.num_snp_clusters):
+			# For this cluster load in relevent data
+			cluster_pairwise_ld_matrix = np.load(self.cluster_pairwise_ld_matrix_files[cluster_iter])
+			cluster_variant_names = np.load(self.cluster_variant_names_files[cluster_iter])
+			cluster_variant_neighbor_positions = np.load(self.cluster_variant_neighbor_positions_files[cluster_iter])
+			# Number of snps assigned to this snp cluster
+			num_cluster_snps = len(cluster_variant_names)
+			cluster_chi_squared = np.load(self.cluster_ukbb_files[cluster_iter]).reshape((num_cluster_snps, self.num_studies), order='F')
+
+			a_temp = a_temp + ((num_cluster_snps)/2.0) #
+
+			b_temp = b_temp + np.sum(np.square(cluster_chi_squared), axis=0)/2.0 #
+			b_temp = b_temp + (num_cluster_snps)/2.0 #
+			b_temp = b_temp + (num_cluster_snps*intercept_squared_expected_val*squared_study_sample_size)/2.0 #
+			b_temp = b_temp - np.sum(cluster_chi_squared, axis=0) #
+			b_temp = b_temp - np.sum(cluster_chi_squared*((self.study_sample_sizes)*intercept_expected_val), axis=0) #
+
+			U_expected_cluster = U_expected_val[cluster_variant_names, :]
+			U_squared_expected_cluster = U_squared_expected_val[cluster_variant_names, :]
+			expected_ld_scores = np.dot(cluster_pairwise_ld_matrix, U_expected_cluster)
+			factor_predictions = np.dot(expected_ld_scores, V_expected_val)
+
+			b_temp = b_temp - np.sum((factor_predictions*cluster_chi_squared)*(self.study_sample_sizes), axis=0) #
+			b_temp = b_temp + (self.study_sample_sizes)*intercept_expected_val*num_cluster_snps #
+			b_temp = b_temp + np.sum(factor_predictions*self.study_sample_sizes, axis=0)  #
+			b_temp = b_temp + np.sum(factor_predictions*(squared_study_sample_size*intercept_expected_val), axis=0)
+
+			b_temp = b_temp + np.sum(np.square(factor_predictions*self.study_sample_sizes), axis=0)/2.0
+			b_temp = b_temp - np.sum(np.dot(np.dot(np.square(cluster_pairwise_ld_matrix), np.square(U_expected_cluster)), np.square(V_expected_val))*squared_study_sample_size, axis=0)/2.0
+			b_temp = b_temp + np.sum(np.dot(np.dot(np.square(cluster_pairwise_ld_matrix), U_squared_expected_cluster), V_squared_expected_val)*squared_study_sample_size, axis=0)/2.0
+		self.tau_alpha = self.alpha_prior + a_temp
+		self.tau_beta = self.beta_prior + b_temp
+
+	def update_tau_shared(self):
 		# Compute other useful expectations
 		V_expected_val = self.V_mu*self.S_V
 		V_squared_expected_val = (np.square(self.V_mu) + self.V_var)*self.S_V
@@ -204,9 +250,9 @@ class USLDSC(object):
 		for kk in range(self.K):
 			temp_V = (V_expected_val*V_expected_val[kk,:])
 			temp_V[kk,:] = V_squared_expected_val[kk,:]
-			interaction_Vs.append(np.sum(temp_V*squared_study_sample_size,axis=1))
-			sum_squared_Vs.append(np.sum(squared_study_sample_size*V_squared_expected_val[kk,:]))
-			sum_Vs.append(np.sum(self.study_sample_sizes*V_expected_val[kk,:]))
+			interaction_Vs.append(np.sum(temp_V*(squared_study_sample_size*tau_expected_val),axis=1))
+			sum_squared_Vs.append(np.sum(tau_expected_val*squared_study_sample_size*V_squared_expected_val[kk,:]))
+			sum_Vs.append(np.sum(tau_expected_val*self.study_sample_sizes*V_expected_val[kk,:]))
 
 		# loop through clusters
 		for cluster_iter in range(self.num_snp_clusters):
@@ -234,32 +280,18 @@ class USLDSC(object):
 				current_U = (self.U_mu[snp_name,:]*self.S_U[snp_name,:])
 				other_snps = other_snps - np.dot(cluster_pairwise_ld_matrix[snp_iter,:, np.newaxis], current_U[np.newaxis,:])
 
-				'''
-				# TEMP
-				predicted_U = (self.U_mu[cluster_variant_names,:]*self.S_U[cluster_variant_names,:])
-				indices = []
-				for variant_namer in range(num_cluster_snps):
-					if variant_namer != snp_iter:
-						indices.append(variant_namer)
-				indices = np.asarray(indices)
-				other_snps2 = np.dot(cluster_pairwise_ld_matrix[:, indices], predicted_U[indices, :])
-				if np.max(np.abs(other_snps - other_snps2)) > 1e-10:
-					print('assumption eroror')
-					pdb.set_trace()
-				# END TEMP
-				'''
 
 				for kk in range(self.K):
 					# This is the update point for U_mk
-					a_term = (-gamma_U_expected_val/2.0) - (tau_expected_val/2.0)*sum_neighbor_ld_squared*sum_squared_Vs[kk]
-					b_term = tau_expected_val*np.sum(ld_weighted_chi_squared*V_expected_val[kk,:]*self.study_sample_sizes)
-					b_term = b_term - tau_expected_val*sum_neighbor_ld*sum_Vs[kk]
-					b_term = b_term - tau_expected_val*sum_neighbor_ld*np.sum(squared_study_sample_size*self.intercept_mu*V_expected_val[kk,:])
+					a_term = (-gamma_U_expected_val/2.0) - (1.0/2.0)*sum_neighbor_ld_squared*sum_squared_Vs[kk] #
+					b_term = np.sum(ld_weighted_chi_squared*V_expected_val[kk,:]*self.study_sample_sizes*tau_expected_val) #
+					b_term = b_term - sum_neighbor_ld*sum_Vs[kk] #
+					b_term = b_term - sum_neighbor_ld*np.sum(tau_expected_val*squared_study_sample_size*self.intercept_mu*V_expected_val[kk,:]) #
 					temp_U = self.U_mu[snp_name, :]*self.S_U[snp_name,:]
 					other_components = np.dot(temp_U, V_expected_val) - temp_U[kk]*V_expected_val[kk,:]
-					b_term = b_term - tau_expected_val*sum_neighbor_ld_squared*np.sum(squared_study_sample_size*other_components*V_expected_val[kk,:])
+					b_term = b_term - sum_neighbor_ld_squared*np.sum(tau_expected_val*squared_study_sample_size*other_components*V_expected_val[kk,:]) #
 
-					b_term = b_term - tau_expected_val*np.sum(np.dot(other_snps, interaction_Vs[kk])*cluster_pairwise_ld_matrix[snp_iter,:])
+					b_term = b_term - np.sum(np.dot(other_snps, interaction_Vs[kk])*cluster_pairwise_ld_matrix[snp_iter,:])
 
 					self.U_mu[snp_name, kk] = (-b_term)/(2.0*a_term)
 					self.U_var[snp_name, kk] = (-1.0)/(2.0*a_term)
@@ -285,8 +317,8 @@ class USLDSC(object):
 			if len(study_chi_sq) != ld_scores.shape[0]:
 				print('assumption error')
 				pdb.set_trace()
-			a_term = (-0.0/2.0) - (tau_expected_val/2.0)*np.square(study_sample_size)*self.num_snps
-			b_term = (tau_expected_val*study_sample_size*np.sum(study_chi_sq)) - (tau_expected_val*study_sample_size*self.num_snps) - (tau_expected_val*np.square(study_sample_size)*np.sum(np.dot(ld_scores, V_expected_val[:, study_num])))
+			a_term = (-0.0/2.0) - (tau_expected_val[study_num]/2.0)*np.square(study_sample_size)*self.num_snps
+			b_term = (tau_expected_val[study_num]*study_sample_size*np.sum(study_chi_sq)) - (tau_expected_val[study_num]*study_sample_size*self.num_snps) - (tau_expected_val[study_num]*np.square(study_sample_size)*np.sum(np.dot(ld_scores, V_expected_val[:, study_num])))
 			self.intercept_mu[study_num] = (-b_term)/(2.0*a_term)
 			self.intercept_var[study_num] = (-1.0)/(2.0*a_term)
 
@@ -308,11 +340,11 @@ class USLDSC(object):
 			# Loop through latent fractors
 			for kk in range(self.K):
 				# Compute VI updates for this (study, latent factor) pair
-				a_term = (-gamma_V_expected_val/2.0) - (tau_expected_val/2.0)*np.square(study_sample_size)*np.sum(squared_ld_scores[:, kk])
+				a_term = (-gamma_V_expected_val/2.0) - (tau_expected_val[study_num]/2.0)*np.square(study_sample_size)*np.sum(squared_ld_scores[:, kk])
 
 				other_components = np.dot(ld_scores, (self.V_mu[:,study_num]*self.S_V[:, study_num])) - ld_scores[:,kk]*(self.V_mu[kk,study_num]*self.S_V[kk, study_num])
 
-				b_term = tau_expected_val*study_sample_size*np.sum(study_chi_sq*ld_scores[:,kk] - ld_scores[:,kk] - study_sample_size*self.intercept_mu[study_num]*ld_scores[:,kk] - study_sample_size*ld_scores[:,kk]*other_components)
+				b_term = tau_expected_val[study_num]*study_sample_size*np.sum(study_chi_sq*ld_scores[:,kk] - ld_scores[:,kk] - study_sample_size*self.intercept_mu[study_num]*ld_scores[:,kk] - study_sample_size*ld_scores[:,kk]*other_components)
 				# Update global model parameters
 				self.V_mu[kk, study_num] = (-b_term)/(2.0*a_term)
 				self.V_var[kk, study_num] = (-1.0)/(2.0*a_term)
@@ -449,9 +481,9 @@ class USLDSC(object):
 		mean_resid_var = np.mean(resid_varz)
 		# Variance params
 		# resid var
-		self.tau_alpha = 1.0
-		self.tau_beta = 1.0
-		self.tau_beta = mean_resid_var
+		self.tau_alpha = np.ones(self.num_studies)
+		self.tau_beta = np.ones(self.num_studies)
+		self.tau_beta = np.asarray(resid_varz)
 		# U var
 		self.gamma_U_alpha = 1.0
 		self.gamma_U_beta = 1.0

@@ -142,7 +142,7 @@ class USLDSC(object):
 		for k in range(self.K):
 			self.theta_U_a[k] = self.a_u_prior + np.sum(self.S_U[:, k])
 			self.theta_U_b[k] = self.b_u_prior + self.num_snps - np.sum(self.S_U[:, k])
-	def update_tau(self):
+	def update_tau_study_specific(self):
 		# Compute other useful expectations
 		V_expected_val = self.V_mu*self.S_V
 		V_squared_expected_val = (np.square(self.V_mu) + self.V_var)*self.S_V
@@ -189,7 +189,7 @@ class USLDSC(object):
 		self.tau_alpha = self.alpha_prior + a_temp
 		self.tau_beta = self.beta_prior + b_temp
 
-	def update_tau_shared(self):
+	def update_tau(self):
 		# Compute other useful expectations
 		V_expected_val = self.V_mu*self.S_V
 		V_squared_expected_val = (np.square(self.V_mu) + self.V_var)*self.S_V
@@ -317,8 +317,8 @@ class USLDSC(object):
 			if len(study_chi_sq) != ld_scores.shape[0]:
 				print('assumption error')
 				pdb.set_trace()
-			a_term = (-0.0/2.0) - (tau_expected_val[study_num]/2.0)*np.square(study_sample_size)*self.num_snps
-			b_term = (tau_expected_val[study_num]*study_sample_size*np.sum(study_chi_sq)) - (tau_expected_val[study_num]*study_sample_size*self.num_snps) - (tau_expected_val[study_num]*np.square(study_sample_size)*np.sum(np.dot(ld_scores, V_expected_val[:, study_num])))
+			a_term = (-0.0/2.0) - (tau_expected_val/2.0)*np.square(study_sample_size)*self.num_snps
+			b_term = (tau_expected_val*study_sample_size*np.sum(study_chi_sq)) - (tau_expected_val*study_sample_size*self.num_snps) - (tau_expected_val*np.square(study_sample_size)*np.sum(np.dot(ld_scores, V_expected_val[:, study_num])))
 			self.intercept_mu[study_num] = (-b_term)/(2.0*a_term)
 			self.intercept_var[study_num] = (-1.0)/(2.0*a_term)
 
@@ -340,11 +340,11 @@ class USLDSC(object):
 			# Loop through latent fractors
 			for kk in range(self.K):
 				# Compute VI updates for this (study, latent factor) pair
-				a_term = (-gamma_V_expected_val/2.0) - (tau_expected_val[study_num]/2.0)*np.square(study_sample_size)*np.sum(squared_ld_scores[:, kk])
+				a_term = (-gamma_V_expected_val/2.0) - (tau_expected_val/2.0)*np.square(study_sample_size)*np.sum(squared_ld_scores[:, kk])
 
 				other_components = np.dot(ld_scores, (self.V_mu[:,study_num]*self.S_V[:, study_num])) - ld_scores[:,kk]*(self.V_mu[kk,study_num]*self.S_V[kk, study_num])
 
-				b_term = tau_expected_val[study_num]*study_sample_size*np.sum(study_chi_sq*ld_scores[:,kk] - ld_scores[:,kk] - study_sample_size*self.intercept_mu[study_num]*ld_scores[:,kk] - study_sample_size*ld_scores[:,kk]*other_components)
+				b_term = tau_expected_val*study_sample_size*np.sum(study_chi_sq*ld_scores[:,kk] - ld_scores[:,kk] - study_sample_size*self.intercept_mu[study_num]*ld_scores[:,kk] - study_sample_size*ld_scores[:,kk]*other_components)
 				# Update global model parameters
 				self.V_mu[kk, study_num] = (-b_term)/(2.0*a_term)
 				self.V_var[kk, study_num] = (-1.0)/(2.0*a_term)
@@ -481,9 +481,11 @@ class USLDSC(object):
 		mean_resid_var = np.mean(resid_varz)
 		# Variance params
 		# resid var
-		self.tau_alpha = np.ones(self.num_studies)
-		self.tau_beta = np.ones(self.num_studies)
-		self.tau_beta = np.asarray(resid_varz)
+		#self.tau_alpha = np.ones(self.num_studies)
+		#self.tau_beta = np.ones(self.num_studies)
+		#self.tau_beta = np.asarray(resid_varz)
+		self.tau_alpha = 1.0
+		self.tau_beta = mean_resid_var
 		# U var
 		self.gamma_U_alpha = 1.0
 		self.gamma_U_beta = 1.0

@@ -15,6 +15,7 @@ baseline_sldsc_annotation_dir="$4"
 sldsc_cell_type_annotation_dir="$5"
 trained_usldsc_model_dir="$6"
 model_name="$7"
+visualize_genomic_annotation_enrichment_dir="$8"
 
 # File containing list of variants used in u-ldsc analysis
 uldsc_variant_file=$processed_1k_genomes_genotype_dir"chr_"$chrom_num"_1k_genomes_european_only_maf_thresh_05_intersect_ukbb.frq"
@@ -52,12 +53,13 @@ fi
 U_S_npy_file=$trained_usldsc_model_dir$model_name"U_S.npy"
 U_npy_file=$trained_usldsc_model_dir$model_name"U.npy"
 enrichment_results_file_stem=$genomic_annotation_dir"chr_"$chrom_num"_sldsc_cell_type_genomic_annotations_enrichment_within_"$model_name
+if false; then
 python perform_genomic_annotation_enrichment_analysis.py $allele_frequency_output_file $cell_type_sldsc_output_file $U_S_npy_file $U_npy_file $enrichment_results_file_stem
+fi
 
 
-
-
-
+module load R/3.5.1
+Rscript visualize_genomic_annotation_enrichment.R $genomic_annotation_dir $chrom_num $model_name $visualize_genomic_annotation_enrichment_dir
 
 
 

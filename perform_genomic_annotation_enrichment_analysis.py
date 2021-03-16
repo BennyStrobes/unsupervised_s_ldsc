@@ -71,6 +71,8 @@ def annotation_lv_logistic_regression(anno, S_U_binary, af_bins):
 		test_info = {'beta': np.nan, 'beta_ub': np.nan, 'beta_lb': np.nan, 'pvalue': np.nan}
 		return test_info
 
+	observed_anno = (observed_anno - np.mean(observed_anno))/np.std(observed_anno)
+
 	ys = []
 	gs = []
 	loaded_snps = np.where(observed_S_U_binary == 1.0)[0]
@@ -95,6 +97,8 @@ def annotation_lv_logistic_regression(anno, S_U_binary, af_bins):
 		gs.append(observed_anno[randomly_sampled_null_indices])
 	ys = np.hstack(ys)
 	gs = np.hstack(gs)
+	# Standardize annotations
+	# gs = (gs - np.mean(gs))/np.std(gs)
 	try:
 		model = sm.Logit(ys, sm.add_constant(gs))
 		res = model.fit()
@@ -103,6 +107,11 @@ def annotation_lv_logistic_regression(anno, S_U_binary, af_bins):
 		beta_ub = ci[1]
 		beta = res.params[1]
 		pvalue = res.pvalues[1]
+		if res.mle_retvals['converged'] == False:
+			beta_lb = np.nan
+			beta_ub = np.nan
+			beta = np.nan
+			pvalue = np.nan
 	except:
 		pvalue = np.nan
 		beta_lb = np.nan
@@ -134,8 +143,13 @@ af_bins = extract_af_bins(allele_frequency_file)
 annotation_names = extract_genomic_annotation_names(genomic_annotation_file)
 
 
+t = open(enrichment_results_file_stem + 'logstic_regression_results.txt', 'w')
+t.write('annotation\tlatent_factor\tpvalue\tbeta\tbeta_lb\tbeta_ub\n')
+
 for annotation_iter, annotation_name in enumerate(annotation_names):
 	anno = extract_genomic_annotation(annotation_iter, genomic_annotation_file)
 	for lv_num in range(K):
 		test_results = annotation_lv_logistic_regression(anno, S_U_binary[:, lv_num], af_bins)
-		print(annotation_name + '\t' + str(lv_num) + '\t' + str(test_results['pvalue']) + '\t' + str(test_results['beta']) + '\t' + '[' + str(test_results['beta_lb']) + ',' + str(test_results['beta_ub']) + ']')
+		t.write(annotation_name + '\t' + str(lv_num) + '\t' + str(test_results['pvalue']) + '\t' + str(test_results['beta']) + '\t' + str(test_results['beta_lb']) + '\t' + str(test_results['beta_ub']) + '\n')
+
+t.close()

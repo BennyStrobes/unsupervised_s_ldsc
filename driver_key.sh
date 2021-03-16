@@ -181,10 +181,11 @@ output_root=$trained_usldsc_model_dir"trained_usldsc_"$model_version"_k_"$k"_b_v
 sbatch run_usldsc.sh $training_data_study_file $training_data_pairwise_ld_file $training_data_cluster_info_file $k $model_version $output_root $b_v
 
 fi
-b_v="0"
-model_name="trained_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_shared_tau_"
+b_v="10"
+model_name="trained_usldsc_"$model_version"_k_"$k"_temp_gamma_"
+if false; then
 sh visualize_usldsc_results.sh $trained_usldsc_model_dir $model_name $training_data_pairwise_ld_file $usldsc_visualize_results_dir $processed_ukbb_dir
-
+fi
 
 
 
@@ -232,12 +233,15 @@ enrichment_root="/work-zfs/abattle4/bstrober/unsupervised_s_ldsc/enrichment/"
 # Directory containing genomic annotations assigned to variants used in U-LDSC
 genomic_annotation_dir=$enrichment_root"genomic_annotations/"
 
+# Directory containing visualizations of enrichment of geneomic annotations in U-LDSC variants
+visualize_genomic_annotation_enrichment_dir=$enrichment_root"visualize_genomic_annotation_enrichment/"
+
 
 model_name="trained_usldsc_vi_k_10_temp_gamma_"
 
 chrom_num="4"
 if false; then
-sh extract_genomic_annotations_per_chromosome.sh $chrom_num $genomic_annotation_dir $processed_1k_genomes_genotype_dir $baseline_sldsc_annotation_dir $sldsc_cell_type_annotation_dir $trained_usldsc_model_dir $model_name
+sh extract_genomic_annotations_per_chromosome.sh $chrom_num $genomic_annotation_dir $processed_1k_genomes_genotype_dir $baseline_sldsc_annotation_dir $sldsc_cell_type_annotation_dir $trained_usldsc_model_dir $model_name $visualize_genomic_annotation_enrichment_dir
 fi
 
 

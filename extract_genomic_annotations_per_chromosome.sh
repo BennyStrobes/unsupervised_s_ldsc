@@ -57,10 +57,16 @@ if false; then
 python perform_genomic_annotation_enrichment_analysis.py $allele_frequency_output_file $cell_type_sldsc_output_file $U_S_npy_file $U_npy_file $enrichment_results_file_stem
 fi
 
+U_S_npy_file=$trained_usldsc_model_dir$model_name"U_S.npy"
+U_npy_file=$trained_usldsc_model_dir$model_name"U.npy"
+enrichment_results_file_stem=$genomic_annotation_dir"chr_"$chrom_num"_sldsc_cell_type_controlled_genomic_annotations_enrichment_within_"$model_name
+python perform_controlled_genomic_annotation_enrichment_analysis.py $allele_frequency_output_file $cell_type_sldsc_output_file $U_S_npy_file $U_npy_file $enrichment_results_file_stem
+
 
 module load R/3.5.1
+if false; then
 Rscript visualize_genomic_annotation_enrichment.R $genomic_annotation_dir $chrom_num $model_name $visualize_genomic_annotation_enrichment_dir
-
+fi
 
 
 

@@ -99,7 +99,7 @@ def pickle_pairwise_ld_info(chromosome_arr, processed_ld_score_dir, organized_tr
 	for chromosome in chromosome_arr:
 		print(chromosome)
 		# Pairwise ld file for this chromosome
-		chromosome_pairwise_ld_file = processed_ld_score_dir + 'chr_' + chromosome + '_ld_scores_pairwise_l2_neighbors_filtered.2_clustered.txt'
+		chromosome_pairwise_ld_file = processed_ld_score_dir + 'chr_' + chromosome + '_ld_scores_pairwise_l2_neighbors_filtered.1_clustered.txt'
 		# Initialize array where each position is a variant and it maps to neighboring indices of variant
 		neighboring_indices_arr = []
 		# Initialize array where each position is a variant and it maps to pairwise lds of each of its neighbors
@@ -156,11 +156,11 @@ def extract_chromosome_pairwise_ld_info(raw_pairwise_ld_file):
 def pickle_cluster_level_pairwise_ld_data(chromosome_arr, processed_ld_score_dir, organized_training_data_dir):
 	for chromosome in chromosome_arr:
 		# Extract pairwise ld info on this chromosome
-		raw_pairwise_ld_file = processed_ld_score_dir + 'chr_' + chromosome + '_ld_scores_pairwise_l2_neighbors_filtered.2_clustered.txt'
+		raw_pairwise_ld_file = processed_ld_score_dir + 'chr_' + chromosome + '_ld_scores_pairwise_l2_neighbors_filtered.1_clustered.txt'
 		neighboring_indices_arr, neighboring_pairwise_lds_arr = extract_chromosome_pairwise_ld_info(raw_pairwise_ld_file)
 		# Now on this chromosome loop through snp clusters
 		# And save npy matrix corresponding to LD-matrix across all snps in the cluster
-		cluster_mapping_file = processed_ld_score_dir + 'chr_' + str(chromosome) + '_ld_scores_pairwise_l2_neighbors_filtered.2_cluster_mapping.txt'
+		cluster_mapping_file = processed_ld_score_dir + 'chr_' + str(chromosome) + '_ld_scores_pairwise_l2_neighbors_filtered.1_cluster_mapping.txt'
 		f = open(cluster_mapping_file)
 		head_count = 0
 		for line in f:
@@ -229,7 +229,7 @@ def pickle_cluster_level_ukbb_data(chromosome_arr, study_names, processed_ukbb_d
 
 		# Now on this chromosome loop through snp clusters
 		# And save npy array corresponding to chi-squared stats for that cluster
-		cluster_mapping_file = processed_ld_score_dir + 'chr_' + str(chromosome) + '_ld_scores_pairwise_l2_neighbors_filtered.2_cluster_mapping.txt'
+		cluster_mapping_file = processed_ld_score_dir + 'chr_' + str(chromosome) + '_ld_scores_pairwise_l2_neighbors_filtered.1_cluster_mapping.txt'
 		f = open(cluster_mapping_file)
 		head_count = 0
 		for line in f:
@@ -277,7 +277,7 @@ def pickle_cluster_level_variant_names(chromosome_arr, processed_ld_score_dir, o
 		#print(chromosome)
 		# Now on this chromosome loop through snp clusters
 		# And save snp indices that belong tot that cluster
-		cluster_mapping_file = processed_ld_score_dir + 'chr_' + str(chromosome) + '_ld_scores_pairwise_l2_neighbors_filtered.2_cluster_mapping.txt'
+		cluster_mapping_file = processed_ld_score_dir + 'chr_' + str(chromosome) + '_ld_scores_pairwise_l2_neighbors_filtered.1_cluster_mapping.txt'
 		f = open(cluster_mapping_file)
 		head_count = 0
 		for line in f:
@@ -301,7 +301,7 @@ def pickle_cluster_level_variant_names(chromosome_arr, processed_ld_score_dir, o
 			#		pdb.set_trace()
 			#	used_snps[snp_index] = 1.0
 		f.close()
-		chromosome_starting_index = chromosome_starting_index + get_number_of_snps_in_this_file(processed_ld_score_dir + 'chr_' + chromosome + '_ld_scores_pairwise_l2_neighbors_filtered.2_clustered.txt')
+		chromosome_starting_index = chromosome_starting_index + get_number_of_snps_in_this_file(processed_ld_score_dir + 'chr_' + chromosome + '_ld_scores_pairwise_l2_neighbors_filtered.1_clustered.txt')
 	#pdb.set_trace()
 
 
@@ -322,7 +322,7 @@ def pickle_cluster_level_data(chromosome_arr, processed_ukbb_dir, processed_ld_s
 		#print(chromosome)
 		# Now on this chromosome loop through snp clusters
 		# And save snp indices that belong tot that cluster
-		cluster_mapping_file = processed_ld_score_dir + 'chr_' + str(chromosome) + '_ld_scores_pairwise_l2_neighbors_filtered.2_cluster_mapping.txt'
+		cluster_mapping_file = processed_ld_score_dir + 'chr_' + str(chromosome) + '_ld_scores_pairwise_l2_neighbors_filtered.1_cluster_mapping.txt'
 		f = open(cluster_mapping_file)
 		head_count = 0
 		for line in f:

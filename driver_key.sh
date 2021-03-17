@@ -15,7 +15,7 @@ one_k_genomes_dir="/work-zfs/abattle4/lab_data/1k_genomes/"
 one_k_genomes_sample_annotation_file="/work-zfs/abattle4/lab_data/1k_genomes/integrated_call_samples_v3.20130502.ALL.panel"
 
 # File with line for each UKBB study to be used containing location of all UKBB studies to be used
-ukbb_studies_file="/work-zfs/abattle4/bstrober/unsupervised_s_ldsc/input_data/independent_seed_1_heritable_ukbb_studies.tsv"
+ukbb_studies_file="/work-zfs/abattle4/bstrober/unsupervised_s_ldsc/input_data/independent_.9_seed_1_heritable_.125_ukbb_studies.tsv"
 
 # Directory containing centimorgan map file for each chromosome
 # Files of format: genetic_map_chr19_combined_b37.txt
@@ -54,10 +54,11 @@ for chrom_num in {1..22}; do
 	sh preprocess_shell_parallel_per_chromosome.sh $one_k_genomes_dir $one_k_genomes_sample_annotation_file $ukbb_studies_file $centimorgan_map_dir $processed_1k_genomes_genotype_dir $processed_ukbb_dir $processed_ld_score_dir $chrom_num
 done
 fi
-if false; then
 chrom_num="4"
-sh preprocess_shell_parallel_per_chromosome.sh $one_k_genomes_dir $one_k_genomes_sample_annotation_file $ukbb_studies_file $centimorgan_map_dir $processed_1k_genomes_genotype_dir $processed_ukbb_dir $processed_ld_score_dir $chrom_num
+if false; then
+sbatch preprocess_shell_parallel_per_chromosome.sh $one_k_genomes_dir $one_k_genomes_sample_annotation_file $ukbb_studies_file $centimorgan_map_dir $processed_1k_genomes_genotype_dir $processed_ukbb_dir $processed_ld_score_dir $chrom_num
 fi
+
 if false; then
 module load R/3.5.1
 Rscript visualize_processed_data.R $processed_ld_score_dir $visualize_processed_data_dir
@@ -113,16 +114,6 @@ if false; then
 sh organize_usldsc_training_data.sh $chromosomes_for_training $processed_ukbb_dir $processed_ld_score_dir $organized_training_data_dir
 fi
 
-training_data_study_file=$organized_training_data_dir"usldsc_training_studies.txt"
-training_data_pairwise_ld_file=$organized_training_data_dir"usldsc_training_pairwise_ld_files.txt"
-training_data_cluster_info_file=$organized_training_data_dir"usldsc_training_snp_cluster_files.txt"
-
-model_version="als"
-k="7"
-output_root=$trained_usldsc_model_dir"trained_usldsc_"$model_version"_k_"$k"_"
-if false; then
-sbatch run_usldsc.sh $training_data_study_file $training_data_pairwise_ld_file $training_data_cluster_info_file $k $model_version $output_root
-fi
 
 
 
@@ -133,55 +124,12 @@ training_data_cluster_info_file=$organized_training_data_dir"usldsc_training_snp
 model_version="vi"
 k="10"
 echo "OPTIMIZE Non-sim"
-if false; then
 b_v="0"
-output_root=$trained_usldsc_model_dir"trained_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_shared_tau_"
-sbatch run_usldsc.sh $training_data_study_file $training_data_pairwise_ld_file $training_data_cluster_info_file $k $model_version $output_root $b_v
-
-
-b_v="50"
-output_root=$trained_usldsc_model_dir"trained_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_shared_tau_"
-sbatch run_usldsc.sh $training_data_study_file $training_data_pairwise_ld_file $training_data_cluster_info_file $k $model_version $output_root $b_v
-
-
-b_v="100"
-output_root=$trained_usldsc_model_dir"trained_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_shared_tau_"
-sbatch run_usldsc.sh $training_data_study_file $training_data_pairwise_ld_file $training_data_cluster_info_file $k $model_version $output_root $b_v
-
-
-b_v="150"
-output_root=$trained_usldsc_model_dir"trained_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_shared_tau_"
-sbatch run_usldsc.sh $training_data_study_file $training_data_pairwise_ld_file $training_data_cluster_info_file $k $model_version $output_root $b_v
-
-b_v="200"
-output_root=$trained_usldsc_model_dir"trained_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_shared_tau_"
-sbatch run_usldsc.sh $training_data_study_file $training_data_pairwise_ld_file $training_data_cluster_info_file $k $model_version $output_root $b_v
-fi
-
-if false; then
-
-b_v="20"
 output_root=$trained_usldsc_model_dir"trained_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_"
 sbatch run_usldsc.sh $training_data_study_file $training_data_pairwise_ld_file $training_data_cluster_info_file $k $model_version $output_root $b_v
 
-b_v="40"
-output_root=$trained_usldsc_model_dir"trained_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_"
-sbatch run_usldsc.sh $training_data_study_file $training_data_pairwise_ld_file $training_data_cluster_info_file $k $model_version $output_root $b_v
 
-b_v="60"
-output_root=$trained_usldsc_model_dir"trained_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_"
-sbatch run_usldsc.sh $training_data_study_file $training_data_pairwise_ld_file $training_data_cluster_info_file $k $model_version $output_root $b_v
-
-b_v="80"
-output_root=$trained_usldsc_model_dir"trained_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_"
-sbatch run_usldsc.sh $training_data_study_file $training_data_pairwise_ld_file $training_data_cluster_info_file $k $model_version $output_root $b_v
-
-b_v="100"
-output_root=$trained_usldsc_model_dir"trained_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_"
-sbatch run_usldsc.sh $training_data_study_file $training_data_pairwise_ld_file $training_data_cluster_info_file $k $model_version $output_root $b_v
-
-fi
-b_v="10"
+b_v="0"
 model_name="trained_usldsc_"$model_version"_k_"$k"_temp_gamma_"
 if false; then
 sh visualize_usldsc_results.sh $trained_usldsc_model_dir $model_name $training_data_pairwise_ld_file $usldsc_visualize_results_dir $processed_ukbb_dir
@@ -240,7 +188,7 @@ visualize_genomic_annotation_enrichment_dir=$enrichment_root"visualize_genomic_a
 model_name="trained_usldsc_vi_k_10_temp_gamma_"
 
 chrom_num="4"
-if false; then
+if false;  then
 sh extract_genomic_annotations_per_chromosome.sh $chrom_num $genomic_annotation_dir $processed_1k_genomes_genotype_dir $baseline_sldsc_annotation_dir $sldsc_cell_type_annotation_dir $trained_usldsc_model_dir $model_name $visualize_genomic_annotation_enrichment_dir
 fi
 

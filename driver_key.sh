@@ -121,20 +121,35 @@ training_data_study_file=$organized_training_data_dir"usldsc_training_studies.tx
 training_data_pairwise_ld_file=$organized_training_data_dir"usldsc_training_pairwise_ld_files.txt"
 training_data_cluster_info_file=$organized_training_data_dir"usldsc_training_snp_cluster_files.txt"
 
-model_version="vi"
+model_version="study_variance_vi"
 k="10"
 echo "OPTIMIZE Non-sim"
 b_v="0"
 output_root=$trained_usldsc_model_dir"trained_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_"
+if false; then
 sbatch run_usldsc.sh $training_data_study_file $training_data_pairwise_ld_file $training_data_cluster_info_file $k $model_version $output_root $b_v
+fi
 
-
-b_v="0"
-model_name="trained_usldsc_"$model_version"_k_"$k"_temp_gamma_"
+k="10"
+model_version="study_variance_vi"
+model_name="trained_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_"
 if false; then
 sh visualize_usldsc_results.sh $trained_usldsc_model_dir $model_name $training_data_pairwise_ld_file $usldsc_visualize_results_dir $processed_ukbb_dir
 fi
 
+k="10"
+model_version="vi"
+model_name="trained_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_"
+if false; then
+sh visualize_usldsc_results.sh $trained_usldsc_model_dir $model_name $training_data_pairwise_ld_file $usldsc_visualize_results_dir $processed_ukbb_dir
+fi
+
+k="20"
+model_version="vi"
+model_name="trained_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_"
+if false; then
+sh visualize_usldsc_results.sh $trained_usldsc_model_dir $model_name $training_data_pairwise_ld_file $usldsc_visualize_results_dir $processed_ukbb_dir
+fi
 
 
 
@@ -185,12 +200,64 @@ genomic_annotation_dir=$enrichment_root"genomic_annotations/"
 visualize_genomic_annotation_enrichment_dir=$enrichment_root"visualize_genomic_annotation_enrichment/"
 
 
-model_name="trained_usldsc_vi_k_10_temp_gamma_"
+k="10"
+model_version="vi"
+model_name="trained_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_"
 
 chrom_num="4"
-if false;  then
+if false; then
 sh extract_genomic_annotations_per_chromosome.sh $chrom_num $genomic_annotation_dir $processed_1k_genomes_genotype_dir $baseline_sldsc_annotation_dir $sldsc_cell_type_annotation_dir $trained_usldsc_model_dir $model_name $visualize_genomic_annotation_enrichment_dir
 fi
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+################### 
+# Debug
+###################
+output_dir="/work-zfs/abattle4/bstrober/unsupervised_s_ldsc/debug_ldsc/"
+
+
+study_name="KNEE_ARTHROSIS"
+study_file="/work-zfs/abattle4/bstrober/unsupervised_s_ldsc/debug_ldsc/KNEE_ARTHROSIS.ldsc.imputed_v3.both_sexes.tsv.bgz"
+
+output_root=$output_dir$study_name
+module load python/2.7-anaconda
+if false; then
+python munge_sumstats.py --sumstats $study_file --out $output_root --merge-alleles "/work-zfs/abattle4/bstrober/unsupervised_s_ldsc/debug_ldsc/w_hm3.snplist"
+fi
+
+if false; then
+python ldsc.py --h2 $study_file --ref-ld-chr /work-zfs/abattle4/bstrober/tools/ldsc/eur_w_ld_chr/ --w-ld-chr /work-zfs/abattle4/bstrober/tools/ldsc/eur_w_ld_chr/ --out $output_root"_h2_"
+fi
+
+module load python/2.7-anaconda
+if false; then
+python ldsc.py --h2 BMI.sumstats.gz --ref-ld-chr /work-zfs/abattle4/bstrober/tools/ldsc/baseline/baseline. --w-ld-chr /work-zfs/abattle4/bstrober/tools/ldsc/weights_hm3_no_hla/weights. --overlap-annot --frqfile-chr /work-zfs/abattle4/bstrober/tools/ldsc/1000G_frq/1000G.mac5eur. --out BMI_baseline
+fi
+if false; then
+python ldsc.py --h2 BMI.sumstats.gz --ref-ld-chr /work-zfs/abattle4/bstrober/tools/ldsc/eur_w_ld_chr/ --w-ld-chr /work-zfs/abattle4/bstrober/tools/ldsc/eur_w_ld_chr/ --out BMI_h2
+fi
 
 

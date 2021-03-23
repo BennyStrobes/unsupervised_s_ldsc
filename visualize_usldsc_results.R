@@ -220,8 +220,8 @@ studies = as.character(study_data$study_descriptor)
 
 # Make histogram showing distribution of fraction of neighbors of loaded variant that are also loaded
 output_file <- paste0(visualization_dir, model_name, "fraction_neighbor_loaded_histograms.pdf")
-fraction_neighbor_loaded_hist <- make_fraction_neighbor_loaded_histogram(paste0(visualization_dir, model_name))
-ggsave(fraction_neighbor_loaded_hist, file=output_file, width=7.0, height=6.0, units="in")
+#fraction_neighbor_loaded_hist <- make_fraction_neighbor_loaded_histogram(paste0(visualization_dir, model_name))
+#ggsave(fraction_neighbor_loaded_hist, file=output_file, width=7.0, height=6.0, units="in")
 
 # Make scatter plot comparing ld scores with max loadings
 output_file <- paste0(visualization_dir, model_name, "ld_score_max_loading_scatter.pdf")
@@ -252,5 +252,5 @@ ggsave(loading_histogram, file=output_file, width=7.0, height=6.0, units="in")
 # Make heatmap of factor matix
 output_file <- paste0(visualization_dir, model_name, "study_clustered_factor_heatmap.pdf")
 factor_heatmap <- make_study_clustered_factor_heatmap(factors, studies)
-ggsave(factor_heatmap, file=output_file, width=7.0, height=30.0, units="in")
+ggsave(factor_heatmap, file=output_file, width=15.0, height=10, units="in")
 

@@ -18,6 +18,7 @@ import copy
 import os
 import glob
 import pdb
+from sklearn.linear_model import LinearRegression
 
 
 _N_CHR = 22
@@ -343,6 +344,15 @@ def estimate_h2(args, log):
 
     s = lambda x: np.array(x).reshape((n_snp, 1))
     chisq = s(sumstats.Z**2)
+    x1 = s(sumstats.N)*ref_ld/M_annot[0,0]
+    x2 = s(sumstats.N)
+    X_temp = np.hstack((x1, x2))
+    y_temp = chisq[:,0] - 1.0
+    random_indices = np.random.choice(np.arange(len(y_temp)), size=int(len(y_temp)/50), replace=False)
+    reg_subsamp_fit = LinearRegression(fit_intercept=False).fit(X_temp[random_indices,:], y_temp[random_indices])
+    print(reg_subsamp_fit.coef_)
+    reg_fit = LinearRegression(fit_intercept=False).fit(X_temp, y_temp)
+    print(reg_fit.coef_)
     if chisq_max is not None:
         ii = np.ravel(chisq < chisq_max)
         sumstats = sumstats.ix[ii, :]

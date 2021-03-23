@@ -150,6 +150,6 @@ for annotation_iter, annotation_name in enumerate(annotation_names):
 	anno = extract_genomic_annotation(annotation_iter, genomic_annotation_file)
 	for lv_num in range(K):
 		test_results = annotation_lv_logistic_regression(anno, S_U_binary[:, lv_num], af_bins)
-		t.write(annotation_name + '\t' + str(lv_num) + '\t' + str(test_results['pvalue']) + '\t' + str(test_results['beta']) + '\t' + str(test_results['beta_lb']) + '\t' + str(test_results['beta_ub']) + '\n')
+		t.write(annotation_name + '\t' + str(lv_num+1) + '\t' + str(test_results['pvalue']) + '\t' + str(test_results['beta']) + '\t' + str(test_results['beta_lb']) + '\t' + str(test_results['beta_ub']) + '\n')
 
 t.close()

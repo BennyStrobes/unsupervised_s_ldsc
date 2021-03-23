@@ -16,6 +16,8 @@ from irwls import IRWLS
 from scipy.stats import t as tdist
 from collections import namedtuple
 import pdb
+from sklearn.linear_model import LinearRegression
+
 np.seterr(divide='raise', invalid='raise')
 
 s = lambda x: remove_brackets(str(np.matrix(x)))
@@ -163,6 +165,9 @@ class LD_Score_Regression(object):
         tot_agg = self.aggregate(y, x_tot, N, M_tot, intercept)
         initial_w = self._update_weights(
             x_tot, w, N, M_tot, tot_agg, intercept)
+        x1 = N*x/M[0,0]
+        x2 = N
+        reg_fit = LinearRegression(fit_intercept=False).fit(np.hstack((x1,x2)), y[:, 0] - 1.0, sample_weight=initial_w[:,0])
         Nbar = np.mean(N)  # keep condition number low
         x = np.multiply(N, x) / Nbar
         if not self.constrain_intercept:

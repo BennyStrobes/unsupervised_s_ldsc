@@ -142,6 +142,14 @@ def annotation_lv_logistic_regression(anno, shared_anno, S_U_binary, af_bins):
 		beta_ub = ci[1]
 		beta = res.params[2]
 		pvalue = res.pvalues[2]
+		#G = np.transpose(np.vstack((gs)))
+		#model = sm.Logit(ys, sm.add_constant(gs))
+		#res = model.fit()
+		#ci = res.conf_int()[1,:]
+		#beta_lb = ci[0]
+		#beta_ub = ci[1]
+		#beta = res.params[1]
+		#pvalue = res.pvalues[1]
 		if res.mle_retvals['converged'] == False:
 			beta_lb = np.nan
 			beta_ub = np.nan
@@ -154,6 +162,28 @@ def annotation_lv_logistic_regression(anno, shared_anno, S_U_binary, af_bins):
 		beta = np.nan
 	test_info = {'beta': beta, 'beta_ub': beta_ub, 'beta_lb': beta_lb, 'pvalue': pvalue}
 	return test_info
+
+def extract_ct_specific_genomic_annotation(annotation_iter, genomic_annotation_file):
+	f = open(genomic_annotation_file)
+	head_count = 0
+	anno = []
+	for line in f:
+		line = line.rstrip()
+		data = line.split('\t')
+		if head_count == 0:
+			head_count = head_count + 1
+			continue
+		anno_string = data[(annotation_iter + 1)]
+		if anno_string == 'NA':
+			anno.append(np.nan)
+		else:
+			valz = np.asarray(data[1:]).astype(float)
+			if np.sum(valz) == 1.0 and valz[annotation_iter] == 1.0:
+				anno.append(1.0)
+			else:
+				anno.append(0.0)
+			#anno.append(float(anno_string))
+	return np.asarray(anno)
 
 
 allele_frequency_file = sys.argv[1]
@@ -183,11 +213,12 @@ t.write('annotation\tlatent_factor\tpvalue\tbeta\tbeta_lb\tbeta_ub\n')
 
 shared_anno = extract_shared_genomic_annotation(genomic_annotation_file)
 for annotation_iter, annotation_name in enumerate(annotation_names):
-	anno = extract_genomic_annotation(annotation_iter, genomic_annotation_file)
+	anno =extract_genomic_annotation(annotation_iter, genomic_annotation_file)
+	#ct_spec_anno = extract_ct_specific_genomic_annotation(annotation_iter, genomic_annotation_file)
 	if np.array_equal(np.isnan(anno), np.isnan(shared_anno)) == False:
 		print('assumption error')
 	for lv_num in range(K):
 		test_results = annotation_lv_logistic_regression(anno, shared_anno, S_U_binary[:, lv_num], af_bins)
-		t.write(annotation_name + '\t' + str(lv_num) + '\t' + str(test_results['pvalue']) + '\t' + str(test_results['beta']) + '\t' + str(test_results['beta_lb']) + '\t' + str(test_results['beta_ub']) + '\n')
+		t.write(annotation_name + '\t' + str(lv_num + 1) + '\t' + str(test_results['pvalue']) + '\t' + str(test_results['beta']) + '\t' + str(test_results['beta_lb']) + '\t' + str(test_results['beta_ub']) + '\n')
 
 t.close()

@@ -114,7 +114,7 @@ class USLDSC(object):
 			self.update_theta_V()
 			#self.update_theta_U()
 			self.update_tau()
-			if vi_iter > 45.0:
+			if vi_iter > 15.0:
 				pdb.set_trace()
 			# Save results
 			#np.save(self.output_root + 'U.npy', self.U_mu)
@@ -401,6 +401,7 @@ class USLDSC(object):
 			'''
 	def simulate_data(self):
 		self.V_sim = np.random.randn(self.K, self.num_studies)
+		self.S_V_sim = np.random.randint(2, size=(self.K, self.num_studies))
 		self.intercept_sim = np.random.randn(self.num_studies) 
 		self.intercept_sim = self.intercept_sim - np.min(self.intercept_sim)
 		self.U_sim = np.random.randn(self.num_snps, self.K)
@@ -408,7 +409,7 @@ class USLDSC(object):
 			self.U_sim[:,k] = ((self.U_sim[:,k]-np.mean(self.U_sim[:,k]))/(10.0*np.std(self.U_sim[:,k])))
 		self.tau_sim = .1
 		ld_scores = generate_ld_scores(self.U_sim, self.pairwise_ld_files, self.pairwise_ld_indices_files)
-		factor_predicted = np.dot(ld_scores, self.V_sim)
+		factor_predicted = np.dot(ld_scores, self.V_sim*self.S_V_sim)
 		self.chi_squared_sim = np.zeros((self.num_snps, self.num_studies))
 		# Perform VI updates independently for each study
 		for study_num in range(self.num_studies):

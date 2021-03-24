@@ -15,7 +15,7 @@ one_k_genomes_dir="/work-zfs/abattle4/lab_data/1k_genomes/"
 one_k_genomes_sample_annotation_file="/work-zfs/abattle4/lab_data/1k_genomes/integrated_call_samples_v3.20130502.ALL.panel"
 
 # File with line for each UKBB study to be used containing location of all UKBB studies to be used
-ukbb_studies_file="/work-zfs/abattle4/bstrober/unsupervised_s_ldsc/input_data/independent_.9_seed_1_heritable_.125_ukbb_studies.tsv"
+ukbb_studies_file="/work-zfs/abattle4/bstrober/unsupervised_s_ldsc/input_data/independent_.9_seed_2_observed_heritable_.1_ukbb_studies.tsv"
 
 # Directory containing centimorgan map file for each chromosome
 # Files of format: genetic_map_chr19_combined_b37.txt
@@ -121,38 +121,21 @@ training_data_study_file=$organized_training_data_dir"usldsc_training_studies.tx
 training_data_pairwise_ld_file=$organized_training_data_dir"usldsc_training_pairwise_ld_files.txt"
 training_data_cluster_info_file=$organized_training_data_dir"usldsc_training_snp_cluster_files.txt"
 
-model_version="study_variance_vi"
+model_version="vi"
 k="10"
 echo "OPTIMIZE Non-sim"
 b_v="0"
-output_root=$trained_usldsc_model_dir"trained_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_"
+output_root=$trained_usldsc_model_dir"trained_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_v_half_"
 if false; then
 sbatch run_usldsc.sh $training_data_study_file $training_data_pairwise_ld_file $training_data_cluster_info_file $k $model_version $output_root $b_v
 fi
 
 k="10"
-model_version="study_variance_vi"
-model_name="trained_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_"
-if false; then
-sh visualize_usldsc_results.sh $trained_usldsc_model_dir $model_name $training_data_pairwise_ld_file $usldsc_visualize_results_dir $processed_ukbb_dir
-fi
-
-k="10"
 model_version="vi"
-model_name="trained_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_"
+model_name="trained_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_v_orig_"
 if false; then
 sh visualize_usldsc_results.sh $trained_usldsc_model_dir $model_name $training_data_pairwise_ld_file $usldsc_visualize_results_dir $processed_ukbb_dir
 fi
-
-k="20"
-model_version="vi"
-model_name="trained_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_"
-if false; then
-sh visualize_usldsc_results.sh $trained_usldsc_model_dir $model_name $training_data_pairwise_ld_file $usldsc_visualize_results_dir $processed_ukbb_dir
-fi
-
-
-
 
 
 

@@ -45,7 +45,6 @@ fi
 
 variant_file=$processed_ukbb_dir"chr_"$chrom_num"_variants_intersect_1k_genomes_ukbb.txt"
 variant_position_file=$processed_ukbb_dir"chr_"$chrom_num"_variant_positions_intersect_1k_genomes_ukbb.txt"
-if false; then
 python filter_variants_to_those_in_both_1k_genomes_and_ukbb.py $chrom_num $processed_1k_genomes_genotype_dir $updated_ukbb_studies_file $variant_file $variant_position_file
 
 vcftools --vcf $processed_1k_genomes_genotype_dir"chr_"$chrom_num"_1k_genomes_european_only_maf_thresh_05.recode.vcf" --positions $variant_position_file --out $processed_1k_genomes_genotype_dir"chr_"$chrom_num"_1k_genomes_european_only_maf_thresh_05_intersect_ukbb"  --recode --recode-INFO-all
@@ -64,7 +63,7 @@ plink --bfile $processed_1k_genomes_genotype_dir"chr_"$chrom_num"_1k_genomes_eur
 
 python reorder_gwas_files_to_match_reference_genotype.py $chrom_num $processed_1k_genomes_genotype_dir"chr_"$chrom_num"_1k_genomes_european_only_maf_thresh_05_intersect_ukbb.frq" $updated_ukbb_studies_file $processed_ukbb_dir
 
-fi
+
 python ldsc.py --bfile $processed_1k_genomes_genotype_dir"chr_"$chrom_num"_1k_genomes_european_only_maf_thresh_05_intersect_ukbb_with_cm_map" --l2 --l2-pairwise --ld-wind-cm 1 --chunk-size 1 --out $processed_ld_score_dir"chr_"$chrom_num"_ld_scores"
 
 

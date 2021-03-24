@@ -256,6 +256,7 @@ class USLDSC(object):
 
 		# loop through clusters
 		for cluster_iter in range(self.num_snp_clusters):
+			print(cluster_iter)
 			# For this cluster load in relevent data
 			cluster_pairwise_ld_matrix = np.load(self.cluster_pairwise_ld_matrix_files[cluster_iter])
 			cluster_variant_names = np.load(self.cluster_variant_names_files[cluster_iter])
@@ -263,7 +264,6 @@ class USLDSC(object):
 			# Number of snps assigned to this snp cluster
 			num_cluster_snps = len(cluster_variant_names)
 			cluster_chi_squared = np.load(self.cluster_ukbb_files[cluster_iter]).reshape((num_cluster_snps, self.num_studies), order='F')
-
 			predicted_U = (self.U_mu[cluster_variant_names,:]*self.S_U[cluster_variant_names,:])
 			other_snps = np.dot(cluster_pairwise_ld_matrix, predicted_U)
 			# Loop through snps
@@ -302,6 +302,7 @@ class USLDSC(object):
 					self.S_U[snp_name, kk] = sigmoid_function(z_term)
 				current_U = (self.U_mu[snp_name,:]*self.S_U[snp_name,:])
 				other_snps = other_snps + np.dot(cluster_pairwise_ld_matrix[snp_iter,:, np.newaxis], current_U[np.newaxis,:])
+
 	def update_intercept(self):
 		# Compute other useful expectations
 		tau_expected_val = self.tau_alpha/self.tau_beta
@@ -402,7 +403,7 @@ class USLDSC(object):
 		self.gamma_V_beta = 1.0
 
 		# Sparsity parameters
-		self.theta_U_a = np.ones(self.K)*(.2)
+		self.theta_U_a = np.ones(self.K)*(1.0)
 		self.theta_U_b = np.ones(self.K)
-		self.theta_V_a = np.ones(self.K)*(.2)
+		self.theta_V_a = np.ones(self.K)*(1.0)
 		self.theta_V_b = np.ones(self.K)

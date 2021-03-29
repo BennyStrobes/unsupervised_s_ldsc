@@ -59,9 +59,9 @@ if false; then
 sbatch preprocess_shell_parallel_per_chromosome.sh $one_k_genomes_dir $one_k_genomes_sample_annotation_file $ukbb_studies_file $centimorgan_map_dir $processed_1k_genomes_genotype_dir $processed_ukbb_dir $processed_ld_score_dir $chrom_num
 fi
 
-if false; then
 module load R/3.5.1
-Rscript visualize_processed_data.R $processed_ld_score_dir $visualize_processed_data_dir
+if false; then
+Rscript visualize_processed_data.R $processed_ld_score_dir $processed_ukbb_dir $visualize_processed_data_dir
 fi
 
 
@@ -110,10 +110,12 @@ trained_usldsc_model_dir=$usldsc_root"usldsc_results/"
 
 # Directory containing results of model training
 usldsc_visualize_results_dir=$usldsc_root"usldsc_results_visualization/"
+
+# Directory containing results of Model simulation
+usldsc_simulation_results_dir=$usldsc_root"usldsc_simulation_results/"
 if false; then
 sh organize_usldsc_training_data.sh $chromosomes_for_training $processed_ukbb_dir $processed_ld_score_dir $organized_training_data_dir
 fi
-
 
 
 
@@ -121,11 +123,25 @@ training_data_study_file=$organized_training_data_dir"usldsc_training_studies.tx
 training_data_pairwise_ld_file=$organized_training_data_dir"usldsc_training_pairwise_ld_files.txt"
 training_data_cluster_info_file=$organized_training_data_dir"usldsc_training_snp_cluster_files.txt"
 
+
+
+
+model_version="vi"
+k="10"
+b_v="1"
+simulation_output_root=$usldsc_simulation_results_dir"usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_"
+if false; then
+sh run_usldsc_simulation.sh $training_data_study_file $training_data_pairwise_ld_file $training_data_cluster_info_file $k $model_version $simulation_output_root $b_v
+fi
+
+
+
+
 model_version="vi"
 k="10"
 echo "OPTIMIZE Non-sim"
-b_v="0"
-output_root=$trained_usldsc_model_dir"trained_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_v_half_"
+b_v="1"
+output_root=$trained_usldsc_model_dir"trained_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_"
 if false; then
 sbatch run_usldsc.sh $training_data_study_file $training_data_pairwise_ld_file $training_data_cluster_info_file $k $model_version $output_root $b_v
 fi
@@ -142,6 +158,52 @@ fi
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+training_data_study_file=$organized_training_data_dir"usldsc_training_chromosome_standardized_studies.txt"
+training_data_pairwise_ld_file=$organized_training_data_dir"usldsc_training_pairwise_ld_files.txt"
+training_data_cluster_info_file=$organized_training_data_dir"usldsc_training_standardized_snp_cluster_files.txt"
+
+model_version="vi"
+k="10"
+echo "OPTIMIZE Non-sim"
+b_v="1"
+if false; then
+output_root=$trained_usldsc_model_dir"trained_standardized_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_v5_"
+sbatch run_usldsc.sh $training_data_study_file $training_data_pairwise_ld_file $training_data_cluster_info_file $k $model_version $output_root $b_v
+
+b_v="50"
+output_root=$trained_usldsc_model_dir"trained_standardized_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_v5_"
+sbatch run_usldsc.sh $training_data_study_file $training_data_pairwise_ld_file $training_data_cluster_info_file $k $model_version $output_root $b_v
+
+b_v="100"
+output_root=$trained_usldsc_model_dir"trained_standardized_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_v5_"
+sbatch run_usldsc.sh $training_data_study_file $training_data_pairwise_ld_file $training_data_cluster_info_file $k $model_version $output_root $b_v
+
+b_v="150"
+output_root=$trained_usldsc_model_dir"trained_standardized_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_v5_"
+sbatch run_usldsc.sh $training_data_study_file $training_data_pairwise_ld_file $training_data_cluster_info_file $k $model_version $output_root $b_v
+fi
+
+k="10"
+model_version="vi"
+model_name="trained_standardized_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_"
+if false; then
+sh visualize_usldsc_results.sh $trained_usldsc_model_dir $model_name $training_data_pairwise_ld_file $usldsc_visualize_results_dir $processed_ukbb_dir
+fi
 
 
 
@@ -185,7 +247,7 @@ visualize_genomic_annotation_enrichment_dir=$enrichment_root"visualize_genomic_a
 
 k="10"
 model_version="vi"
-model_name="trained_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_"
+model_name="trained_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_v_orig_"
 
 chrom_num="4"
 if false; then

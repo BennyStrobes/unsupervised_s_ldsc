@@ -196,7 +196,7 @@ processed_ukbb_dir <- args[3]
 
 factor_file = paste0(visualization_dir, model_name, "V_S.txt")
 factors = read.table(factor_file, header=FALSE)
-
+if (FALSE) {
 loadings_file = paste0(visualization_dir, model_name, "U_S.txt")
 loadings = read.table(loadings_file, header=FALSE)
 
@@ -208,7 +208,7 @@ ld_scores = read.table(ld_scores_file, header=FALSE)$V1
 
 max_loading = apply(abs(loadings), 1, FUN=max)
 max_bernoulli = apply(loadings_bernoulli, 1, FUN=max)
-
+}
 studies_file <- paste0(processed_ukbb_dir, "updated_ukbb_studies.txt")
 study_data = read.table(studies_file, header=TRUE)
 studies = as.character(study_data$study_descriptor)
@@ -225,29 +225,29 @@ output_file <- paste0(visualization_dir, model_name, "fraction_neighbor_loaded_h
 
 # Make scatter plot comparing ld scores with max loadings
 output_file <- paste0(visualization_dir, model_name, "ld_score_max_loading_scatter.pdf")
-ld_score_max_loading_scatter <- make_ld_score_vs_max_loading_scatter(ld_scores, max_loading)
-ggsave(ld_score_max_loading_scatter, file=output_file, width=7.0, height=6.0, units="in")
+#ld_score_max_loading_scatter <- make_ld_score_vs_max_loading_scatter(ld_scores, max_loading)
+#ggsave(ld_score_max_loading_scatter, file=output_file, width=7.0, height=6.0, units="in")
 
 # Make box plot comparing ld scores with max loadings
 output_file <- paste0(visualization_dir, model_name, "ld_score_abs_loading_boxplot.pdf")
-ld_score_loading_boxplot <- make_ld_score_vs_loading_boxplot(ld_scores, abs(loadings))
-ggsave(ld_score_loading_boxplot, file=output_file, width=7.0, height=6.0, units="in")
+#ld_score_loading_boxplot <- make_ld_score_vs_loading_boxplot(ld_scores, abs(loadings))
+#ggsave(ld_score_loading_boxplot, file=output_file, width=7.0, height=6.0, units="in")
 
 
 # Make loadings distribution histograms
 output_file <- paste0(visualization_dir, model_name, "loadings_distributions_histograms.pdf")
-loading_histogram <- make_loadings_distributions_histograms(loadings, "Loading")
-ggsave(loading_histogram, file=output_file, width=7.0, height=6.0, units="in")
+#loading_histogram <- make_loadings_distributions_histograms(loadings, "Loading")
+#ggsave(loading_histogram, file=output_file, width=7.0, height=6.0, units="in")
 
 # Make loadings distribution histograms
 output_file <- paste0(visualization_dir, model_name, "abs_loadings_distributions_histograms.pdf")
-loading_histogram <- make_loadings_distributions_histograms(abs(loadings), "Absolute Loading")
-ggsave(loading_histogram, file=output_file, width=7.0, height=6.0, units="in")
+#loading_histogram <- make_loadings_distributions_histograms(abs(loadings), "Absolute Loading")
+#ggsave(loading_histogram, file=output_file, width=7.0, height=6.0, units="in")
 
 # Make loadings distribution histograms
 output_file <- paste0(visualization_dir, model_name, "bernoulli_prob_distributions_histograms.pdf")
-loading_histogram <- make_loadings_distributions_histograms(loadings_bernoulli, "Loading bernoulli prob")
-ggsave(loading_histogram, file=output_file, width=7.0, height=6.0, units="in")
+#loading_histogram <- make_loadings_distributions_histograms(loadings_bernoulli, "Loading bernoulli prob")
+#ggsave(loading_histogram, file=output_file, width=7.0, height=6.0, units="in")
 
 # Make heatmap of factor matix
 output_file <- paste0(visualization_dir, model_name, "study_clustered_factor_heatmap.pdf")

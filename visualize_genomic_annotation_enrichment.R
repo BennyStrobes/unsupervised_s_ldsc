@@ -49,42 +49,42 @@ make_genomic_anno_error_bar_plot_v2_for_one_factor <- function(df, factor_num, y
 }
 
 make_genomic_anno_error_bar_plot_v2 <- function(df) {
-	factor <- 0
+	factor <- 1
 	p0 <- make_genomic_anno_error_bar_plot_v2_for_one_factor(df[df$latent_factor == factor, ], factor, TRUE)
 
-	factor <- 1
+	factor <- 2
 	p1 <- make_genomic_anno_error_bar_plot_v2_for_one_factor(df[df$latent_factor == factor, ], factor, FALSE)
 
 
-	factor <- 2
+	factor <- 3
 	p2 <- make_genomic_anno_error_bar_plot_v2_for_one_factor(df[df$latent_factor == factor, ], factor, FALSE)
 
 
-	factor <- 3
+	factor <- 4
 	p3 <- make_genomic_anno_error_bar_plot_v2_for_one_factor(df[df$latent_factor == factor, ], factor, FALSE)
 
 
-	factor <- 4
+	factor <- 5
 	p4 <- make_genomic_anno_error_bar_plot_v2_for_one_factor(df[df$latent_factor == factor, ], factor, FALSE)
 
 
-	factor <- 5
+	factor <- 6
 	p5 <- make_genomic_anno_error_bar_plot_v2_for_one_factor(df[df$latent_factor == factor, ], factor, FALSE)
 
 
-	factor <- 6
+	factor <- 7
 	p6 <- make_genomic_anno_error_bar_plot_v2_for_one_factor(df[df$latent_factor == factor, ], factor, FALSE)
 
 
-	factor <- 7
+	factor <- 8
 	p7 <- make_genomic_anno_error_bar_plot_v2_for_one_factor(df[df$latent_factor == factor, ], factor, FALSE)
 
 
-	factor <- 8
+	factor <- 9
 	p8 <- make_genomic_anno_error_bar_plot_v2_for_one_factor(df[df$latent_factor == factor, ], factor, FALSE)
 
 
-	factor <- 9
+	factor <- 10
 	p9 <- make_genomic_anno_error_bar_plot_v2_for_one_factor(df[df$latent_factor == factor, ], factor, FALSE)
 
 
@@ -137,6 +137,49 @@ make_annotation_beta_factor_heatmap <- function(df) {
 }
 
 
+make_annotation_log10_pvalue_factor_heatmap <- function(df) {
+	df2 <- data.frame(annotation=df$annotation, latent_factor=df$latent_factor, beta=-log10(df$pvalue))
+	mat_t <- dcast(df2, annotation ~ latent_factor)
+	anno_names <- mat_t[,1]
+	mat <- as.matrix(mat_t[, 2:dim(mat_t)[2]])
+	ord <- hclust( dist(scale(mat), method = "euclidean"), method = "ward.D" )$order
+	#factors <- as.matrix(t(factors))
+
+	# Initialize PVE heatmap
+    #factor_colnames <- paste0("usldsc_factor", 1:(dim(factors)[2]))
+    #factor_rownames <- studies
+    #colnames(factors) <- factor_colnames
+    #rownames(factors) <- factor_rownames
+
+	#ord <- hclust( dist(scale(factors), method = "euclidean"), method = "ward.D" )$order
+
+    #melted_mat <- melt(factors)
+    #colnames(melted_mat) <- c("Covariate", "Loading","factor_value")
+
+    #melted_mat$Covariate = factor(melted_mat$Covariate, levels=rownames(factors)[ord])
+    #melted_mat$Loading = factor(melted_mat$Loading, levels=factor_colnames)
+	 #  Use factors to represent covariate and pc name
+   	# melted_mat$Covariate 
+    # melted_mat$Covariate <- factor(melted_mat$Covariate, levels = rownames(pve_map)[ord])
+    #melted_mat$PC <- substr(as.character(melted_mat$PC),3,5)
+    #melted_mat$PC <- factor(melted_mat$PC, levels=paste0("", 1:(length(unique(melted_mat$PC)))))
+
+    
+    #levels(melted_mat$PC) = paste0("PC", 1:(length(levels(melted_mat$PC))))
+    #  PLOT!
+    df$annotation = factor(df$annotation, levels=anno_names[ord])
+
+    heatmap <- ggplot(data=df, aes(y=annotation, x=latent_factor)) + geom_tile(aes(fill=-log10(pvalue))) + scale_fill_gradient2(midpoint=0, guide="colorbar")
+    heatmap <- heatmap + labs(y="",x="",fill="")
+    heatmap <- heatmap + theme(text = element_text(size=8),axis.text=element_text(size=7), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black"), legend.text = element_text(size=7), legend.title = element_text(size=8),  axis.text.x = element_text(angle = 90,hjust=1, vjust=.5)) 
+    # Save File
+    return(heatmap)
+
+
+}
+
+
+
 #############################
 # Command line args
 #############################
@@ -147,7 +190,7 @@ output_dir <- args[4]
 
 
 # File containing cell type genomic annotation enrichment results
-ct_genomic_anno_enrichment_file <- paste0(genomic_annotation_dir, "chr_", chrom_num, "_sldsc_cell_type_genomic_annotations_enrichment_within_", model_name, "logstic_regression_results.txt")
+ct_genomic_anno_enrichment_file <- paste0(genomic_annotation_dir, "chr_", chrom_num, "_sldsc_cell_type_controlled_genomic_annotations_enrichment_within_", model_name, "logstic_regression_results.txt")
 ct_genomic_anno_enrichment_df <- read.table(ct_genomic_anno_enrichment_file, header=TRUE)
 ct_genomic_anno_enrichment_df$latent_factor <- factor(ct_genomic_anno_enrichment_df$latent_factor)
 
@@ -162,14 +205,14 @@ sldsc_baseline_genomic_anno_enrichment_df <- sldsc_baseline_genomic_anno_enrichm
 
 # Make error-bar plot showing snp-factor enrichment within genomic annotations
 output_file <- paste0(output_dir, model_name, "cell_type_genomic_anno_enrichment_error_bar.pdf")
-#error_bar_plot <- make_genomic_anno_error_bar_plot(ct_genomic_anno_enrichment_df)
-#ggsave(error_bar_plot, file=output_file, width=12.0, height=6.0, units="in")
+error_bar_plot <- make_genomic_anno_error_bar_plot(ct_genomic_anno_enrichment_df)
+ggsave(error_bar_plot, file=output_file, width=12.0, height=6.0, units="in")
 
 
 # Maker error bar plot showing snp-factor enrichment with genomic annotations
 output_file <- paste0(output_dir, model_name, "baseline_ldsc_genomic_anno_enrichment_error_bar_v2.pdf")
-#error_bar_plot <- make_genomic_anno_error_bar_plot_v2(sldsc_baseline_genomic_anno_enrichment_df)
-#ggsave(error_bar_plot, file=output_file, width=25, height=18.0, units="in")
+error_bar_plot <- make_genomic_anno_error_bar_plot_v2(sldsc_baseline_genomic_anno_enrichment_df)
+ggsave(error_bar_plot, file=output_file, width=25, height=18.0, units="in")
 
 
 # Maker error bar plot showing snp-factor enrichment with genomic annotations
@@ -181,4 +224,9 @@ ggsave(beta_heatmap, file=output_file, width=7, height=9.0, units="in")
 output_file <- paste0(output_dir, model_name, "baseline_ldsc_genomic_anno_enrichment_beta_heatmap.pdf")
 beta_heatmap <- make_annotation_beta_factor_heatmap(sldsc_baseline_genomic_anno_enrichment_df)
 ggsave(beta_heatmap, file=output_file, width=7, height=9.0, units="in")
+
+# Maker error bar plot showing snp-factor enrichment with genomic annotations
+output_file <- paste0(output_dir, model_name, "cell_type_genomic_anno_enrichment_log10_pvalue_heatmap.pdf")
+log10_pvalue_heatmap <- make_annotation_log10_pvalue_factor_heatmap(ct_genomic_anno_enrichment_df)
+ggsave(log10_pvalue_heatmap, file=output_file, width=15, height=4.0, units="in")
 

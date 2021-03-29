@@ -65,13 +65,18 @@ usldsc_visualize_results_dir = sys.argv[4]
 
 model_stem = model_dir + model_name
 
+###########################
+# Load and save V matrix
+###########################
+V_matrix = np.load(model_stem + 'V_S.npy')
+np.savetxt(usldsc_visualize_results_dir + model_name + 'V_S.txt', V_matrix, delimiter='\t', fmt="%s")
 
+'''
 ###########################
 # Generate LD Scores of variants
 ###########################
 ld_scores = generate_ld_scores_of_variants(pairwise_ld_file)
 np.savetxt(usldsc_visualize_results_dir + model_name + 'ld_scores.txt', ld_scores, delimiter='\t', fmt="%s")
-
 
 ###########################
 # Load and save V matrix
@@ -95,3 +100,4 @@ for component_num in range(U_S_matrix.shape[1]):
 	fraction_variants = get_fraction_of_loaded_variants_in_ld_with_loaded_variant(S_matrix, pairwise_ld_file, r_squared, component_num)
 	np.savetxt(usldsc_visualize_results_dir + model_name + 'fraction_loaded_neighbors_component_' + str(component_num) + '.txt', fraction_variants, delimiter='\t', fmt="%s")
 
+'''

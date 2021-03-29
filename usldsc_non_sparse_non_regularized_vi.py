@@ -101,14 +101,9 @@ class USLDSC(object):
 			print('ITERATION: ' + str(vi_iter) + '  ' + str(time.time()))
 			# Perform Updates
 			self.update_intercept()
-			self.update_V(vi_iter)
-			self.update_U(vi_iter)
-			if vi_iter > 5:
-				self.update_theta_V()
-				self.update_theta_U()
-				self.update_gamma_U()
-				self.update_gamma_V()
-			self.update_tau_study_specific()
+			self.update_V()
+			self.update_U()
+			self.update_tau()
 			# Save results
 			np.save(self.output_root + 'U.npy', self.U_mu)
 			np.save(self.output_root + 'U_S.npy', self.U_mu*self.S_U)
@@ -237,7 +232,7 @@ class USLDSC(object):
 		self.tau_alpha = self.alpha_prior + a_temp
 		self.tau_beta = self.beta_prior + b_temp
 
-	def update_U(self, vi_iter):
+	def update_U(self):
 		# Compute other useful expectations
 		tau_expected_val = self.tau_alpha/self.tau_beta
 		V_expected_val = self.V_mu*self.S_V
@@ -264,7 +259,6 @@ class USLDSC(object):
 			# Number of snps assigned to this snp cluster
 			num_cluster_snps = len(cluster_variant_names)
 			cluster_chi_squared = np.load(self.cluster_ukbb_files[cluster_iter]).reshape((num_cluster_snps, self.num_studies), order='F')
-
 			predicted_U = (self.U_mu[cluster_variant_names,:]*self.S_U[cluster_variant_names,:])
 			other_snps = np.dot(cluster_pairwise_ld_matrix, predicted_U)
 			# Loop through snps
@@ -297,22 +291,19 @@ class USLDSC(object):
 					self.U_mu[snp_name, kk] = (-b_term)/(2.0*a_term)
 					self.U_var[snp_name, kk] = (-1.0)/(2.0*a_term)
 					# Sparsity
-					if vi_iter > 5:
-						ln_theta_U_expected_val = special.digamma(self.theta_U_a[kk]) - special.digamma(self.theta_U_a[kk]+self.theta_U_b[kk])
-						ln_1_minus_theta_U_expected_val = special.digamma(self.theta_U_b[kk]) - special.digamma(self.theta_U_a[kk]+self.theta_U_b[kk])
-						z_term = ln_theta_U_expected_val - ln_1_minus_theta_U_expected_val + .5*np.log(gamma_U_expected_val) - .5*np.log(-2.0*a_term) + (np.square(b_term)/(-4.0*a_term))
-						self.S_U[snp_name, kk] = sigmoid_function(z_term)
+					ln_theta_U_expected_val = special.digamma(self.theta_U_a[kk]) - special.digamma(self.theta_U_a[kk]+self.theta_U_b[kk])
+					ln_1_minus_theta_U_expected_val = special.digamma(self.theta_U_b[kk]) - special.digamma(self.theta_U_a[kk]+self.theta_U_b[kk])
 				current_U = (self.U_mu[snp_name,:]*self.S_U[snp_name,:])
 				other_snps = other_snps + np.dot(cluster_pairwise_ld_matrix[snp_iter,:, np.newaxis], current_U[np.newaxis,:])
+
 	def update_intercept(self):
 		# Compute other useful expectations
-		tau_expected_val_arr = self.tau_alpha/self.tau_beta
+		tau_expected_val = self.tau_alpha/self.tau_beta
 		V_expected_val = self.V_mu*self.S_V
 		# Calculate LD SCORES
 		ld_scores = generate_ld_scores(self.U_mu*self.S_U, self.pairwise_ld_files, self.pairwise_ld_indices_files)
 		# Perform VI updates independently for each study
 		for study_num in range(self.num_studies):
-			tau_expected_val = tau_expected_val_arr[study_num]
 			# Extract relevent data for this study
 			study_chi_sq = np.load(self.chi_squared_files[study_num])
 			study_sample_size = self.study_sample_sizes[study_num]
@@ -326,16 +317,15 @@ class USLDSC(object):
 			self.intercept_var[study_num] = (-1.0)/(2.0*a_term)
 
 
-	def update_V(self, vi_iter):
+	def update_V(self):
 		# Calculate expectation of ld scores and squared ld scores
 		ld_scores, squared_ld_scores = generate_ld_scores_and_squared_ld_scores(self.U_mu*self.S_U, (np.square(self.U_mu) + self.U_var)*self.S_U, self.pairwise_ld_files, self.pairwise_ld_indices_files)
 		# Compute other useful expectations
-		tau_expected_val_arr = self.tau_alpha/self.tau_beta
+		tau_expected_val = self.tau_alpha/self.tau_beta
 		gamma_V_expected_val = self.gamma_V_alpha/self.gamma_V_beta
 		# Perform VI updates independently for each study
 		for study_num in range(self.num_studies):
 			# Extract relevent data for this study
-			tau_expected_val = tau_expected_val_arr[study_num]
 			study_chi_sq = np.load(self.chi_squared_files[study_num])
 			study_sample_size = self.study_sample_sizes[study_num]
 			# Simple error checking
@@ -353,11 +343,8 @@ class USLDSC(object):
 				self.V_mu[kk, study_num] = (-b_term)/(2.0*a_term)
 				self.V_var[kk, study_num] = (-1.0)/(2.0*a_term)
 				# Sparsity
-				if vi_iter > 5:
-					ln_theta_V_expected_val = special.digamma(self.theta_V_a[kk]) - special.digamma(self.theta_V_a[kk]+self.theta_V_b[kk])  # expectation of ln(1-X)
-					ln_1_minus_theta_V_expected_val = special.digamma(self.theta_V_b[kk]) - special.digamma(self.theta_V_a[kk]+self.theta_V_b[kk])
-					z_term = ln_theta_V_expected_val - ln_1_minus_theta_V_expected_val + .5*np.log(gamma_V_expected_val) - .5*np.log(-2.0*a_term) + (np.square(b_term)/(-4.0*a_term))
-					self.S_V[kk, study_num] = sigmoid_function(z_term)
+				ln_theta_V_expected_val = special.digamma(self.theta_V_a[kk]) - special.digamma(self.theta_V_a[kk]+self.theta_V_b[kk])  # expectation of ln(1-X)
+				ln_1_minus_theta_V_expected_val = special.digamma(self.theta_V_b[kk]) - special.digamma(self.theta_V_a[kk]+self.theta_V_b[kk])
 	def initialize_variables(self):
 		# initialization of V doesn't matter as we learn V on the first step conditioned on U
 		self.V_mu = np.zeros((self.K, self.num_studies))
@@ -389,16 +376,16 @@ class USLDSC(object):
 			#clf = Lasso(alpha=.1)
 			reg = LinearRegression().fit(ld_score*study_sample_size, study_chi_sq-1.0)
 			residual_var = np.sum(np.square(reg.predict(ld_score*study_sample_size) - (study_chi_sq-1.0)))/(len(study_chi_sq) -2)
-			resid_varz.append(np.var(study_chi_sq))
+			resid_varz.append(residual_var)
 		mean_resid_var = np.mean(resid_varz)
-		min_resid_var = np.min(resid_varz)
+		print(mean_resid_var)
 		# Variance params
 		# resid var
-		self.tau_alpha = np.ones(self.num_studies)
-		self.tau_beta = np.asarray(resid_varz)
+		#self.tau_alpha = np.ones(self.num_studies)
+		#self.tau_beta = np.ones(self.num_studies)
 		#self.tau_beta = np.asarray(resid_varz)
-		#self.tau_alpha = 1.0
-		#self.tau_beta = mean_resid_var
+		self.tau_alpha = 1.0
+		self.tau_beta = mean_resid_var
 		# U var
 		self.gamma_U_alpha = .01
 		self.gamma_U_beta = 1.0

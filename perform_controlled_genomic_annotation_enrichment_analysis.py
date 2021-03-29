@@ -39,6 +39,8 @@ def extract_genomic_annotation(annotation_iter, genomic_annotation_file):
 	f = open(genomic_annotation_file)
 	head_count = 0
 	anno = []
+	union_other_anno = []
+	avg_other_anno = []
 	for line in f:
 		line = line.rstrip()
 		data = line.split('\t')
@@ -46,11 +48,21 @@ def extract_genomic_annotation(annotation_iter, genomic_annotation_file):
 			head_count = head_count + 1
 			continue
 		anno_string = data[(annotation_iter + 1)]
+		annos_string = data[1:]
+		other_anno = []
+		for i, annos in enumerate(annos_string):
+			if i != annotation_iter:
+				other_anno.append(annos)
 		if anno_string == 'NA':
 			anno.append(np.nan)
+			union_other_anno.append(np.nan)
+			avg_other_anno.append(np.nan)
 		else:
 			anno.append(float(anno_string))
-	return np.asarray(anno)
+			other_anno = np.asarray(other_anno).astype(float)
+			union_other_anno.append(np.max(other_anno))
+			avg_other_anno.append(np.mean(other_anno))
+	return np.asarray(anno), np.asarray(union_other_anno), np.asarray(avg_other_anno)
 
 def extract_shared_genomic_annotation(genomic_annotation_file):
 	f = open(genomic_annotation_file)
@@ -84,7 +96,7 @@ def extract_shared_genomic_annotation(genomic_annotation_file):
 			pdb.set_trace()
 	return np.asarray(anno)
 
-def annotation_lv_logistic_regression(anno, shared_anno, S_U_binary, af_bins):
+def annotation_lv_logistic_regression(anno, shared_anno, avg_anno, S_U_binary, af_bins):
 	multiplier = 1
 	permute = False
 	# Get indices where annotation is observed
@@ -92,6 +104,7 @@ def annotation_lv_logistic_regression(anno, shared_anno, S_U_binary, af_bins):
 
 	observed_anno = anno[observed_indices]
 	observed_shared_anno = shared_anno[observed_indices]
+	observed_avg_anno = avg_anno[observed_indices]
 	observed_S_U_binary = S_U_binary[observed_indices]
 	observed_af_bins = af_bins[observed_indices]
 
@@ -102,14 +115,17 @@ def annotation_lv_logistic_regression(anno, shared_anno, S_U_binary, af_bins):
 
 	observed_anno = (observed_anno - np.mean(observed_anno))/np.std(observed_anno)
 	observed_shared_anno = (observed_shared_anno - np.mean(observed_shared_anno))/np.std(observed_shared_anno)
+	observed_avg_anno = (observed_avg_anno - np.mean(observed_avg_anno))/np.std(observed_avg_anno)
 
 	ys = []
 	gs = []
 	gs_shared = []
+	gs_avg = []
 	loaded_snps = np.where(observed_S_U_binary == 1.0)[0]
 	ys.append([1]*len(loaded_snps))
 	gs.append(observed_anno[loaded_snps])
 	gs_shared.append(observed_shared_anno[loaded_snps])
+	gs_avg.append(observed_avg_anno[loaded_snps])
 
 	bin_counts = {}
 	for snp_index in loaded_snps:
@@ -128,20 +144,22 @@ def annotation_lv_logistic_regression(anno, shared_anno, S_U_binary, af_bins):
 		ys.append([0]*len(randomly_sampled_null_indices))
 		gs.append(observed_anno[randomly_sampled_null_indices])
 		gs_shared.append(observed_shared_anno[randomly_sampled_null_indices])
+		gs_avg.append(observed_avg_anno[randomly_sampled_null_indices])
 	ys = np.hstack(ys)
 	gs = np.hstack(gs)
 	gs_shared = np.hstack(gs_shared)
+	gs_avg = np.hstack(gs_avg)
 	# Standardize annotations
 	# gs = (gs - np.mean(gs))/np.std(gs)
 	try:
-		G = np.transpose(np.vstack((gs_shared, gs)))
+		G = np.transpose(np.vstack((gs_shared, gs_avg, gs)))
 		model = sm.Logit(ys, sm.add_constant(G))
 		res = model.fit()
-		ci = res.conf_int()[2,:]
+		ci = res.conf_int()[3,:]
 		beta_lb = ci[0]
 		beta_ub = ci[1]
-		beta = res.params[2]
-		pvalue = res.pvalues[2]
+		beta = res.params[3]
+		pvalue = res.pvalues[3]
 		#G = np.transpose(np.vstack((gs)))
 		#model = sm.Logit(ys, sm.add_constant(gs))
 		#res = model.fit()
@@ -213,12 +231,12 @@ t.write('annotation\tlatent_factor\tpvalue\tbeta\tbeta_lb\tbeta_ub\n')
 
 shared_anno = extract_shared_genomic_annotation(genomic_annotation_file)
 for annotation_iter, annotation_name in enumerate(annotation_names):
-	anno =extract_genomic_annotation(annotation_iter, genomic_annotation_file)
+	anno, union_other_anno, avg_other_anno =extract_genomic_annotation(annotation_iter, genomic_annotation_file)
 	#ct_spec_anno = extract_ct_specific_genomic_annotation(annotation_iter, genomic_annotation_file)
 	if np.array_equal(np.isnan(anno), np.isnan(shared_anno)) == False:
 		print('assumption error')
 	for lv_num in range(K):
-		test_results = annotation_lv_logistic_regression(anno, shared_anno, S_U_binary[:, lv_num], af_bins)
+		test_results = annotation_lv_logistic_regression(anno, union_other_anno, avg_other_anno, S_U_binary[:, lv_num], af_bins)
 		t.write(annotation_name + '\t' + str(lv_num + 1) + '\t' + str(test_results['pvalue']) + '\t' + str(test_results['beta']) + '\t' + str(test_results['beta_lb']) + '\t' + str(test_results['beta_ub']) + '\n')
 
 t.close()

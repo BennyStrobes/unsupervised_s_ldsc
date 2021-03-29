@@ -23,8 +23,9 @@ module load python/2.7-anaconda
 
 
 allele_frequency_output_file=$genomic_annotation_dir"chr_"$chrom_num"_allele_frequencies.txt"
+if false; then
 python generate_allele_frequency_groupings.py $uldsc_variant_file $allele_frequency_output_file
-
+fi
 
 # Extract set of genomic annotations describing variants in $uldsc_variant_file
 baseline_ldsc_input_file=$baseline_sldsc_annotation_dir"baselineLD."$chrom_num".annot"
@@ -36,8 +37,9 @@ fi
 
 # Extract sldsc cell type annotations describing variants in $uldsc_variant_file
 cell_type_sldsc_output_file=$genomic_annotation_dir"chr_"$chrom_num"_sldsc_cell_type_genomic_annotations.txt"
+if false; then
 python extract_sldsc_cell_type_annotations_per_chromosome.py $sldsc_cell_type_annotation_dir $chrom_num $cell_type_sldsc_output_file $uldsc_variant_file
-
+fi
 
 U_S_npy_file=$trained_usldsc_model_dir$model_name"U_S.npy"
 U_npy_file=$trained_usldsc_model_dir$model_name"U.npy"
@@ -57,13 +59,13 @@ fi
 U_S_npy_file=$trained_usldsc_model_dir$model_name"U_S.npy"
 U_npy_file=$trained_usldsc_model_dir$model_name"U.npy"
 enrichment_results_file_stem=$genomic_annotation_dir"chr_"$chrom_num"_sldsc_cell_type_controlled_genomic_annotations_enrichment_within_"$model_name
+if false; then
 python perform_controlled_genomic_annotation_enrichment_analysis.py $allele_frequency_output_file $cell_type_sldsc_output_file $U_S_npy_file $U_npy_file $enrichment_results_file_stem
-
+fi
 
 module load R/3.5.1
-if false; then
 Rscript visualize_genomic_annotation_enrichment.R $genomic_annotation_dir $chrom_num $model_name $visualize_genomic_annotation_enrichment_dir
-fi
+
 
 
 

@@ -68,7 +68,7 @@ model_stem = model_dir + model_name
 ###########################
 # Load and save V matrix
 ###########################
-V_matrix = np.load(model_stem + 'V_S.npy')
+V_matrix = np.load(model_stem + 'V.npy')
 np.savetxt(usldsc_visualize_results_dir + model_name + 'V_S.txt', V_matrix, delimiter='\t', fmt="%s")
 
 '''

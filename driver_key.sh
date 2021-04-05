@@ -127,14 +127,10 @@ training_data_cluster_info_file=$organized_training_data_dir"usldsc_training_snp
 
 
 model_version="vi"
-k="10"
-b_v="1"
-simulation_output_root=$usldsc_simulation_results_dir"usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_"
+simulation_output_root=$usldsc_simulation_results_dir"usldsc_simulation_"
 if false; then
-sh run_usldsc_simulation.sh $training_data_study_file $training_data_pairwise_ld_file $training_data_cluster_info_file $k $model_version $simulation_output_root $b_v
+sh run_usldsc_simulation.sh $training_data_study_file $training_data_pairwise_ld_file $training_data_cluster_info_file $simulation_output_root
 fi
-
-
 
 
 model_version="vi"
@@ -177,30 +173,28 @@ training_data_study_file=$organized_training_data_dir"usldsc_training_chromosome
 training_data_pairwise_ld_file=$organized_training_data_dir"usldsc_training_pairwise_ld_files.txt"
 training_data_cluster_info_file=$organized_training_data_dir"usldsc_training_standardized_snp_cluster_files.txt"
 
-model_version="vi"
+model_version="weighted_component_gamma_vi"
 k="10"
 echo "OPTIMIZE Non-sim"
-b_v="1"
+b_v="1000000000000000"
+output_root=$trained_usldsc_model_dir"trained_standardized_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_"
 if false; then
-output_root=$trained_usldsc_model_dir"trained_standardized_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_v5_"
-sbatch run_usldsc.sh $training_data_study_file $training_data_pairwise_ld_file $training_data_cluster_info_file $k $model_version $output_root $b_v
+sh run_usldsc.sh $training_data_study_file $training_data_pairwise_ld_file $training_data_cluster_info_file $k $model_version $output_root $b_v
+fi
 
-b_v="50"
-output_root=$trained_usldsc_model_dir"trained_standardized_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_v5_"
-sbatch run_usldsc.sh $training_data_study_file $training_data_pairwise_ld_file $training_data_cluster_info_file $k $model_version $output_root $b_v
 
-b_v="100"
-output_root=$trained_usldsc_model_dir"trained_standardized_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_v5_"
-sbatch run_usldsc.sh $training_data_study_file $training_data_pairwise_ld_file $training_data_cluster_info_file $k $model_version $output_root $b_v
-
-b_v="150"
-output_root=$trained_usldsc_model_dir"trained_standardized_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_v5_"
+model_version="weighted_dirichlet_constrained_V_vi"
+k="30"
+echo "OPTIMIZE Non-sim"
+b_v="1"
+output_root=$trained_usldsc_model_dir"trained_standardized_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_other_init2_"
+if false; then
 sbatch run_usldsc.sh $training_data_study_file $training_data_pairwise_ld_file $training_data_cluster_info_file $k $model_version $output_root $b_v
 fi
 
 k="10"
-model_version="vi"
-model_name="trained_standardized_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_"
+model_version="weighted_dirichlet_constrained_V_vi"
+model_name="trained_standardized_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_other_init2_"
 if false; then
 sh visualize_usldsc_results.sh $trained_usldsc_model_dir $model_name $training_data_pairwise_ld_file $usldsc_visualize_results_dir $processed_ukbb_dir
 fi

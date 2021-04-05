@@ -6,17 +6,19 @@
 #SBATCH --partition=shared
 #SBATCH --nodes=1
 
-
 training_data_study_file="$1"
 training_data_pairwise_ld_file="$2"
 training_data_cluster_info_file="$3"
-k="$4"
-model_version="$5"
-simulation_output_root="$6"
-b_v="$7"
+simulation_output_root="$4"
 
 
 module load python/2.7-anaconda
 
+python run_usldsc_simulation.py $training_data_study_file $training_data_pairwise_ld_file $training_data_cluster_info_file $simulation_output_root
 
-python run_usldsc_simulation.py $training_data_study_file $training_data_pairwise_ld_file $training_data_cluster_info_file $k $model_version $simulation_output_root $b_v
+
+source ~/.bash_profile
+
+if false; then
+python run_mofa_plus.py $simulation_output_root
+fi

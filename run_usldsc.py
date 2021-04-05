@@ -4,12 +4,19 @@ import sys
 import pdb
 import usldsc_als
 import usldsc_vi
+import usldsc_ard_vi
 import usldsc_non_sparse_non_regularized_vi
 import usldsc_shared_factor_vi
 import usldsc_study_variance_vi
 import usldsc_study_variance_non_sparse_vi
 import usldsc_study_variance_non_sparse_non_regularized_vi
 import usldsc_pca
+import usldsc_weighted_vi
+import usldsc_weighted_component_gamma_vi
+import usldsc_weighted_nonnegative_V_vi
+import usldsc_weighted_dirichlet_constrained_V_vi
+
+import usldsc_bernoulli_factor_vi
 
 
 def extract_study_info(studies_file):
@@ -80,6 +87,24 @@ def run_model(studies_file, pairwise_ld_summary_file, training_data_cluster_info
 	elif model_version == 'vi':
 		usldsc = usldsc_vi.USLDSC(K=k, b_v=b_v)
 		usldsc.fit(chi_squared_files=chi_squared_files, study_sample_sizes=study_sample_sizes, pairwise_ld_files=pairwise_ld_files, pairwise_ld_indices_files=pairwise_ld_indices_files, num_snps=num_snps, cluster_ukbb_files=cluster_ukbb_files, cluster_pairwise_ld_matrix_files=cluster_pairwise_ld_matrix_files, cluster_variant_names_files=cluster_variant_names_files, cluster_variant_neighbor_positions_files=cluster_variant_neighbor_positions_files, output_root=output_root)
+	elif model_version == 'bernoulli_factor_vi':
+		usldsc = usldsc_bernoulli_factor_vi.USLDSC(K=k, b_v=b_v)
+		usldsc.fit(chi_squared_files=chi_squared_files, study_sample_sizes=study_sample_sizes, pairwise_ld_files=pairwise_ld_files, pairwise_ld_indices_files=pairwise_ld_indices_files, num_snps=num_snps, cluster_ukbb_files=cluster_ukbb_files, cluster_pairwise_ld_matrix_files=cluster_pairwise_ld_matrix_files, cluster_variant_names_files=cluster_variant_names_files, cluster_variant_neighbor_positions_files=cluster_variant_neighbor_positions_files, output_root=output_root)	
+	elif model_version == 'ard_vi':
+		usldsc = usldsc_ard_vi.USLDSC(K=k, b_v=b_v)
+		usldsc.fit(chi_squared_files=chi_squared_files, study_sample_sizes=study_sample_sizes, pairwise_ld_files=pairwise_ld_files, pairwise_ld_indices_files=pairwise_ld_indices_files, num_snps=num_snps, cluster_ukbb_files=cluster_ukbb_files, cluster_pairwise_ld_matrix_files=cluster_pairwise_ld_matrix_files, cluster_variant_names_files=cluster_variant_names_files, cluster_variant_neighbor_positions_files=cluster_variant_neighbor_positions_files, output_root=output_root)
+	elif model_version == 'weighted_vi':
+		usldsc = usldsc_weighted_vi.USLDSC(K=k, b_v=b_v)
+		usldsc.fit(chi_squared_files=chi_squared_files, study_sample_sizes=study_sample_sizes, pairwise_ld_files=pairwise_ld_files, pairwise_ld_indices_files=pairwise_ld_indices_files, num_snps=num_snps, cluster_ukbb_files=cluster_ukbb_files, cluster_pairwise_ld_matrix_files=cluster_pairwise_ld_matrix_files, cluster_variant_names_files=cluster_variant_names_files, cluster_variant_neighbor_positions_files=cluster_variant_neighbor_positions_files, output_root=output_root)
+	elif model_version == 'weighted_component_gamma_vi':
+		usldsc = usldsc_weighted_component_gamma_vi.USLDSC(K=k, b_v=b_v)
+		usldsc.fit(chi_squared_files=chi_squared_files, study_sample_sizes=study_sample_sizes, pairwise_ld_files=pairwise_ld_files, pairwise_ld_indices_files=pairwise_ld_indices_files, num_snps=num_snps, cluster_ukbb_files=cluster_ukbb_files, cluster_pairwise_ld_matrix_files=cluster_pairwise_ld_matrix_files, cluster_variant_names_files=cluster_variant_names_files, cluster_variant_neighbor_positions_files=cluster_variant_neighbor_positions_files, output_root=output_root)
+	elif model_version == 'weighted_nonnegative_V_vi':
+		usldsc = usldsc_weighted_nonnegative_V_vi.USLDSC(K=k)
+		usldsc.fit(chi_squared_files=chi_squared_files, study_sample_sizes=study_sample_sizes, pairwise_ld_files=pairwise_ld_files, pairwise_ld_indices_files=pairwise_ld_indices_files, num_snps=num_snps, cluster_ukbb_files=cluster_ukbb_files, cluster_pairwise_ld_matrix_files=cluster_pairwise_ld_matrix_files, cluster_variant_names_files=cluster_variant_names_files, cluster_variant_neighbor_positions_files=cluster_variant_neighbor_positions_files, output_root=output_root)
+	elif model_version == 'weighted_dirichlet_constrained_V_vi':
+		usldsc = usldsc_weighted_dirichlet_constrained_V_vi.USLDSC(K=k)
+		usldsc.fit(chi_squared_files=chi_squared_files, study_sample_sizes=study_sample_sizes, pairwise_ld_files=pairwise_ld_files, pairwise_ld_indices_files=pairwise_ld_indices_files, num_snps=num_snps, cluster_ukbb_files=cluster_ukbb_files, cluster_pairwise_ld_matrix_files=cluster_pairwise_ld_matrix_files, cluster_variant_names_files=cluster_variant_names_files, cluster_variant_neighbor_positions_files=cluster_variant_neighbor_positions_files, output_root=output_root)
 	elif model_version == 'non_sparse_non_regularized_vi':
 		usldsc = usldsc_non_sparse_non_regularized_vi.USLDSC(K=k, b_v=b_v)
 		usldsc.fit(chi_squared_files=chi_squared_files, study_sample_sizes=study_sample_sizes, pairwise_ld_files=pairwise_ld_files, pairwise_ld_indices_files=pairwise_ld_indices_files, num_snps=num_snps, cluster_ukbb_files=cluster_ukbb_files, cluster_pairwise_ld_matrix_files=cluster_pairwise_ld_matrix_files, cluster_variant_names_files=cluster_variant_names_files, cluster_variant_neighbor_positions_files=cluster_variant_neighbor_positions_files, output_root=output_root)
@@ -98,7 +123,6 @@ def run_model(studies_file, pairwise_ld_summary_file, training_data_cluster_info
 	elif model_version == 'pca':
 		usldsc = usldsc_pca.USLDSC(K=k)
 		usldsc.fit(chi_squared_files=chi_squared_files, study_sample_sizes=study_sample_sizes, pairwise_ld_files=pairwise_ld_files, pairwise_ld_indices_files=pairwise_ld_indices_files, num_snps=num_snps, cluster_ukbb_files=cluster_ukbb_files, cluster_pairwise_ld_matrix_files=cluster_pairwise_ld_matrix_files, cluster_variant_names_files=cluster_variant_names_files, cluster_variant_neighbor_positions_files=cluster_variant_neighbor_positions_files, output_root=output_root)
-
 
 
 

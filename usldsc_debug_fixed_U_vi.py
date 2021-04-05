@@ -79,7 +79,7 @@ class USLDSC(object):
 		self.b_v_prior = b_v
 		self.alpha_prior = alpha
 		self.beta_prior = beta
-	def fit(self, chi_squared_files, study_sample_sizes, pairwise_ld_files, pairwise_ld_indices_files, num_snps, cluster_ukbb_files, cluster_pairwise_ld_matrix_files, cluster_variant_names_files, cluster_variant_neighbor_positions_files, output_root):
+	def fit(self, U, S_U, chi_squared_files, study_sample_sizes, pairwise_ld_files, pairwise_ld_indices_files, num_snps, cluster_ukbb_files, cluster_pairwise_ld_matrix_files, cluster_variant_names_files, cluster_variant_neighbor_positions_files, output_root):
 		# Load in data
 		self.chi_squared_files = chi_squared_files
 		self.study_sample_sizes = study_sample_sizes
@@ -94,20 +94,22 @@ class USLDSC(object):
 		self.cluster_variant_neighbor_positions_files = cluster_variant_neighbor_positions_files
 		self.num_snp_clusters = len(cluster_variant_names_files) 
 		self.output_root = output_root
+		self.U_sim = U
+		self.S_U_sim = S_U
 		# Initialize variables
 		self.initialize_variables()
 		# Run iterative optimization
 		for vi_iter in range(self.max_iter):
 			print('ITERATION: ' + str(vi_iter) + '  ' + str(time.time()))
 			# Perform Updates
-			self.update_intercept()
-			self.update_V(vi_iter)
-			self.update_U(vi_iter)
-			self.update_theta_V(vi_iter)
-			self.update_theta_U(vi_iter)
 			self.update_gamma_U(vi_iter)
 			self.update_gamma_V(vi_iter)
 			self.update_tau()
+			self.update_intercept()
+			self.update_U(vi_iter)
+			self.update_V(vi_iter)
+			#self.update_theta_V(vi_iter)
+			self.update_theta_U(vi_iter)
 			print(self.theta_V_a/(self.theta_V_a + self.theta_V_b))
 			print(self.theta_U_a/(self.theta_U_a + self.theta_U_b))
 			# Save results
@@ -131,7 +133,7 @@ class USLDSC(object):
 		a_term = self.alpha_prior + ((self.num_snps*self.K)/2.0)
 		b_term = self.beta_prior + (np.sum(U_squared_expected_val)/2.0)
 		#print(str(a_term) + ' / ' + str(b_term))
-		if vi_iter > 1:
+		if vi_iter > 10:
 			self.gamma_U_alpha = a_term
 			self.gamma_U_beta = b_term
 	def update_gamma_V(self, vi_iter):
@@ -152,7 +154,7 @@ class USLDSC(object):
 
 	def update_theta_U(self, vi_iter):
 		# Loop through factors
-		if vi_iter > 1:
+		if vi_iter > 10:
 			for k in range(self.K):
 				self.theta_U_a[k] = self.a_u_prior + np.sum(self.S_U[:, k])
 				self.theta_U_b[k] = self.b_u_prior + self.num_snps - np.sum(self.S_U[:, k])
@@ -314,7 +316,7 @@ class USLDSC(object):
 					ln_theta_U_expected_val = special.digamma(self.theta_U_a[kk]) - special.digamma(self.theta_U_a[kk]+self.theta_U_b[kk])
 					ln_1_minus_theta_U_expected_val = special.digamma(self.theta_U_b[kk]) - special.digamma(self.theta_U_a[kk]+self.theta_U_b[kk])
 					#z_term = ln_theta_U_expected_val - ln_1_minus_theta_U_expected_val + .5*np.log(gamma_U_expected_val) - .5*np.log(-2.0*a_term) + (np.square(b_term)/(-4.0*a_term))
-					if vi_iter > 1:
+					if vi_iter > 10:
 						z_term = ln_theta_U_expected_val - ln_1_minus_theta_U_expected_val + .5*np.log(gamma_U_expected_val) - .5*np.log(-2.0*a_term) + (np.square(b_term)/(-4.0*a_term))
 						#z_term = ln_theta_U_expected_val - ln_1_minus_theta_U_expected_val + .5*log_gamma_U_expected_val - .5*np.log(-2.0*a_term) + (np.square(b_term)/(-4.0*a_term))
 						self.S_U[snp_name, kk] = sigmoid_function(z_term)
@@ -385,11 +387,11 @@ class USLDSC(object):
 		self.intercept_mu = np.zeros(self.num_studies)
 		self.intercept_var = np.ones(self.num_studies)
 		# Initialization of U DOES matter
-		self.U_mu = np.random.randn(self.num_snps, self.K)
-		self.U_var = np.ones((self.num_snps, self.K))
-		for k in range(self.K):
-			self.U_mu[:,k] = ((self.U_mu[:,k]-np.mean(self.U_mu[:,k]))/(10.0*np.std(self.U_mu[:,k])))
-		self.S_U = np.ones((self.num_snps, self.K))
+		self.U_mu = np.copy(self.U_sim)
+		self.U_var = np.ones((self.num_snps, self.K))*1e-15
+		#for k in range(self.K):
+		#	self.U_mu[:,k] = ((self.U_mu[:,k]-np.mean(self.U_mu[:,k]))/(10.0*np.std(self.U_mu[:,k])))
+		self.S_U = np.copy(self.S_U_sim)
 		
 		# Smart init for Residual variance
 		ld_score = generate_ld_scores(np.ones((self.U_mu.shape[0],1)), self.pairwise_ld_files, self.pairwise_ld_indices_files)
@@ -420,11 +422,11 @@ class USLDSC(object):
 		self.gamma_U_alpha = .01
 		self.gamma_U_beta = 1.0
 		# V var
-		self.gamma_V_alpha = 1.0
-		self.gamma_V_beta = 1e-7
+		self.gamma_V_alpha = 1e-7
+		self.gamma_V_beta = 1.0
 
 		# Sparsity parameters
-		self.theta_U_a = np.ones(self.K)*.3
+		self.theta_U_a = np.ones(self.K)*.5
 		self.theta_U_b = np.ones(self.K)
-		self.theta_V_a = np.ones(self.K)
+		self.theta_V_a = np.ones(self.K)*.1
 		self.theta_V_b = np.ones(self.K)

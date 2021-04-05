@@ -101,15 +101,15 @@ class USLDSC(object):
 			print('ITERATION: ' + str(vi_iter) + '  ' + str(time.time()))
 			# Perform Updates
 			self.update_intercept()
-			self.update_V(vi_iter)
 			self.update_U(vi_iter)
-			self.update_theta_V(vi_iter)
-			self.update_theta_U(vi_iter)
-			self.update_gamma_U(vi_iter)
-			self.update_gamma_V(vi_iter)
+			self.update_V(vi_iter)
+
+			
 			self.update_tau()
-			print(self.theta_V_a/(self.theta_V_a + self.theta_V_b))
-			print(self.theta_U_a/(self.theta_U_a + self.theta_U_b))
+			self.update_theta_U(vi_iter)
+			#self.update_gamma_U(vi_iter)
+			self.update_gamma_V(vi_iter)
+			#print(self.tau_alpha/self.tau_beta)
 			# Save results
 			'''
 			np.save(self.output_root + 'U.npy', self.U_mu)
@@ -128,85 +128,39 @@ class USLDSC(object):
 	def update_gamma_U(self, vi_iter):
 		U_var_s_0 = self.gamma_U_beta/self.gamma_U_alpha
 		U_squared_expected_val = ((np.square(self.U_mu) + self.U_var)*self.S_U) + (1.0-self.S_U)*(U_var_s_0)
-		a_term = self.alpha_prior + ((self.num_snps*self.K)/2.0)
-		b_term = self.beta_prior + (np.sum(U_squared_expected_val)/2.0)
+		#a_term = self.alpha_prior + ((self.num_snps*self.K)/2.0)
+		#b_term = self.beta_prior + (np.sum(U_squared_expected_val)/2.0)
 		#print(str(a_term) + ' / ' + str(b_term))
-		if vi_iter > 1:
-			self.gamma_U_alpha = a_term
-			self.gamma_U_beta = b_term
+		if vi_iter > 0:
+			for kk in range(self.K):
+				self.gamma_U_alpha[kk] = self.alpha_prior + (self.num_snps/2.0)
+				self.gamma_U_beta[kk] = self.beta_prior + (np.sum(U_squared_expected_val[:, kk])/2.0)
 	def update_gamma_V(self, vi_iter):
-		V_var_s_0 = self.gamma_V_beta/self.gamma_V_alpha
-		V_squared_expected_val = ((np.square(self.V_mu) + self.V_var)*self.S_V) + (1.0-self.S_V)*(V_var_s_0)
-		a_term = self.alpha_prior + ((self.num_studies*self.K)/2.0)
-		b_term = self.beta_prior + (np.sum(V_squared_expected_val)/2.0)
+		V_squared_expected_val = (np.square(self.V_mu) + self.V_var)
+		#a_term = self.alpha_prior + ((self.num_studies*self.K)/2.0)
+		#b_term = self.beta_prior + (np.sum(V_squared_expected_val)/2.0)
 		#print(str(a_term) + ' / ' + str(b_term))
-		if vi_iter > 1:
-			self.gamma_V_alpha = a_term
-			self.gamma_V_beta = b_term
+		if vi_iter > -1:
+			for kk in range(self.K):
+				self.gamma_V_alpha[kk] = self.alpha_prior + (self.num_studies/2.0)
+				self.gamma_V_beta[kk] = self.beta_prior + (np.sum(V_squared_expected_val[kk,:])/2.0)
 	def update_theta_V(self, vi_iter):
 		# Loop through factors
-		if vi_iter > 1:
+		if vi_iter > -1:
 			for k in range(self.K):
 				self.theta_V_a[k] = self.a_v_prior + np.sum(self.S_V[k, :])
 				self.theta_V_b[k] = self.b_v_prior + self.num_studies - np.sum(self.S_V[k, :])
 
 	def update_theta_U(self, vi_iter):
 		# Loop through factors
-		if vi_iter > 1:
+		if vi_iter > 0:
 			for k in range(self.K):
 				self.theta_U_a[k] = self.a_u_prior + np.sum(self.S_U[:, k])
 				self.theta_U_b[k] = self.b_u_prior + self.num_snps - np.sum(self.S_U[:, k])
-	def update_tau_study_specific(self):
-		# Compute other useful expectations
-		V_expected_val = self.V_mu*self.S_V
-		V_squared_expected_val = (np.square(self.V_mu) + self.V_var)*self.S_V
-		U_expected_val = self.U_mu*self.S_U
-		U_squared_expected_val = (np.square(self.U_mu) + self.U_var)*self.S_U
-		intercept_expected_val = self.intercept_mu
-		intercept_squared_expected_val = np.square(self.intercept_mu) + self.intercept_var
-		squared_study_sample_size = np.square(self.study_sample_sizes)
-
-		# Initizlize variables to keep track of variance info
-		a_temp = np.zeros(self.num_studies)
-		b_temp = np.zeros(self.num_studies)
-		# loop through clusters
-		for cluster_iter in range(self.num_snp_clusters):
-			# For this cluster load in relevent data
-			cluster_pairwise_ld_matrix = np.load(self.cluster_pairwise_ld_matrix_files[cluster_iter])
-			cluster_variant_names = np.load(self.cluster_variant_names_files[cluster_iter])
-			cluster_variant_neighbor_positions = np.load(self.cluster_variant_neighbor_positions_files[cluster_iter])
-			# Number of snps assigned to this snp cluster
-			num_cluster_snps = len(cluster_variant_names)
-			cluster_chi_squared = np.load(self.cluster_ukbb_files[cluster_iter]).reshape((num_cluster_snps, self.num_studies), order='F')
-
-			a_temp = a_temp + ((num_cluster_snps)/2.0) #
-
-			b_temp = b_temp + np.sum(np.square(cluster_chi_squared), axis=0)/2.0 #
-			b_temp = b_temp + (num_cluster_snps)/2.0 #
-			b_temp = b_temp + (num_cluster_snps*intercept_squared_expected_val*squared_study_sample_size)/2.0 #
-			b_temp = b_temp - np.sum(cluster_chi_squared, axis=0) #
-			b_temp = b_temp - np.sum(cluster_chi_squared*((self.study_sample_sizes)*intercept_expected_val), axis=0) #
-
-			U_expected_cluster = U_expected_val[cluster_variant_names, :]
-			U_squared_expected_cluster = U_squared_expected_val[cluster_variant_names, :]
-			expected_ld_scores = np.dot(cluster_pairwise_ld_matrix, U_expected_cluster)
-			factor_predictions = np.dot(expected_ld_scores, V_expected_val)
-
-			b_temp = b_temp - np.sum((factor_predictions*cluster_chi_squared)*(self.study_sample_sizes), axis=0) #
-			b_temp = b_temp + (self.study_sample_sizes)*intercept_expected_val*num_cluster_snps #
-			b_temp = b_temp + np.sum(factor_predictions*self.study_sample_sizes, axis=0)  #
-			b_temp = b_temp + np.sum(factor_predictions*(squared_study_sample_size*intercept_expected_val), axis=0)
-
-			b_temp = b_temp + np.sum(np.square(factor_predictions*self.study_sample_sizes), axis=0)/2.0
-			b_temp = b_temp - np.sum(np.dot(np.dot(np.square(cluster_pairwise_ld_matrix), np.square(U_expected_cluster)), np.square(V_expected_val))*squared_study_sample_size, axis=0)/2.0
-			b_temp = b_temp + np.sum(np.dot(np.dot(np.square(cluster_pairwise_ld_matrix), U_squared_expected_cluster), V_squared_expected_val)*squared_study_sample_size, axis=0)/2.0
-		self.tau_alpha = self.alpha_prior + a_temp
-		self.tau_beta = self.beta_prior + b_temp
-
 	def update_tau(self):
 		# Compute other useful expectations
-		V_expected_val = self.V_mu*self.S_V
-		V_squared_expected_val = (np.square(self.V_mu) + self.V_var)*self.S_V
+		V_expected_val = self.V_mu
+		V_squared_expected_val = (np.square(self.V_mu) + self.V_var)
 		U_expected_val = self.U_mu*self.S_U
 		U_squared_expected_val = (np.square(self.U_mu) + self.U_var)*self.S_U
 		intercept_expected_val = self.intercept_mu
@@ -253,11 +207,11 @@ class USLDSC(object):
 	def update_U(self, vi_iter):
 		# Compute other useful expectations
 		tau_expected_val = self.tau_alpha/self.tau_beta
-		V_expected_val = self.V_mu*self.S_V
-		V_squared_expected_val = (np.square(self.V_mu) + self.V_var)*self.S_V
+		V_expected_val = self.V_mu
+		V_squared_expected_val = (np.square(self.V_mu) + self.V_var)
 		squared_study_sample_size = np.square(self.study_sample_sizes)
 		gamma_U_expected_val = self.gamma_U_alpha/self.gamma_U_beta
-		log_gamma_U_expected_val = special.digamma(self.gamma_U_alpha) - np.log(self.gamma_U_beta)
+		#log_gamma_U_expected_val = special.digamma(self.gamma_U_alpha) - np.log(self.gamma_U_beta)
 		# Precompute some quantities
 		interaction_Vs = []
 		sum_squared_Vs = []
@@ -298,7 +252,7 @@ class USLDSC(object):
 
 				for kk in range(self.K):
 					# This is the update point for U_mk
-					a_term = (-gamma_U_expected_val/2.0) - (1.0/2.0)*sum_neighbor_ld_squared*sum_squared_Vs[kk] #
+					a_term = (-gamma_U_expected_val[kk]/2.0) - (1.0/2.0)*sum_neighbor_ld_squared*sum_squared_Vs[kk] #
 					b_term = np.sum(ld_weighted_chi_squared*V_expected_val[kk,:]*self.study_sample_sizes*tau_expected_val) #
 					b_term = b_term - sum_neighbor_ld*sum_Vs[kk] #
 					b_term = b_term - sum_neighbor_ld*np.sum(tau_expected_val*squared_study_sample_size*self.intercept_mu*V_expected_val[kk,:]) #
@@ -308,14 +262,18 @@ class USLDSC(object):
 
 					b_term = b_term - np.sum(np.dot(other_snps, interaction_Vs[kk])*cluster_pairwise_ld_matrix[snp_iter,:])
 
+					if np.sum(np.dot(other_snps, interaction_Vs[kk])*cluster_pairwise_ld_matrix[snp_iter,:]) != 0.0:
+						print('assumpotineorineoroer')
+						pdb.set_trace()
+
 					self.U_mu[snp_name, kk] = (-b_term)/(2.0*a_term)
 					self.U_var[snp_name, kk] = (-1.0)/(2.0*a_term)
 					# Sparsity
 					ln_theta_U_expected_val = special.digamma(self.theta_U_a[kk]) - special.digamma(self.theta_U_a[kk]+self.theta_U_b[kk])
 					ln_1_minus_theta_U_expected_val = special.digamma(self.theta_U_b[kk]) - special.digamma(self.theta_U_a[kk]+self.theta_U_b[kk])
 					#z_term = ln_theta_U_expected_val - ln_1_minus_theta_U_expected_val + .5*np.log(gamma_U_expected_val) - .5*np.log(-2.0*a_term) + (np.square(b_term)/(-4.0*a_term))
-					if vi_iter > 1:
-						z_term = ln_theta_U_expected_val - ln_1_minus_theta_U_expected_val + .5*np.log(gamma_U_expected_val) - .5*np.log(-2.0*a_term) + (np.square(b_term)/(-4.0*a_term))
+					if vi_iter > 0:
+						z_term = ln_theta_U_expected_val - ln_1_minus_theta_U_expected_val + .5*np.log(gamma_U_expected_val[kk]) - .5*np.log(-2.0*a_term) + (np.square(b_term)/(-4.0*a_term))
 						#z_term = ln_theta_U_expected_val - ln_1_minus_theta_U_expected_val + .5*log_gamma_U_expected_val - .5*np.log(-2.0*a_term) + (np.square(b_term)/(-4.0*a_term))
 						self.S_U[snp_name, kk] = sigmoid_function(z_term)
 				current_U = (self.U_mu[snp_name,:]*self.S_U[snp_name,:])
@@ -324,7 +282,7 @@ class USLDSC(object):
 	def update_intercept(self):
 		# Compute other useful expectations
 		tau_expected_val = self.tau_alpha/self.tau_beta
-		V_expected_val = self.V_mu*self.S_V
+		V_expected_val = self.V_mu
 		# Calculate LD SCORES
 		ld_scores = generate_ld_scores(self.U_mu*self.S_U, self.pairwise_ld_files, self.pairwise_ld_indices_files)
 		# Perform VI updates independently for each study
@@ -360,35 +318,39 @@ class USLDSC(object):
 			# Loop through latent fractors
 			for kk in range(self.K):
 				# Compute VI updates for this (study, latent factor) pair
-				a_term = (-gamma_V_expected_val/2.0) - (tau_expected_val/2.0)*np.square(study_sample_size)*np.sum(squared_ld_scores[:, kk])
+				a_term = (-gamma_V_expected_val[kk]/2.0) - (tau_expected_val/2.0)*np.square(study_sample_size)*np.sum(squared_ld_scores[:, kk])
 
-				other_components = np.dot(ld_scores, (self.V_mu[:,study_num]*self.S_V[:, study_num])) - ld_scores[:,kk]*(self.V_mu[kk,study_num]*self.S_V[kk, study_num])
+				other_components = np.dot(ld_scores, (self.V_mu[:,study_num])) - ld_scores[:,kk]*(self.V_mu[kk,study_num])
 
 				b_term = tau_expected_val*study_sample_size*np.sum(study_chi_sq*ld_scores[:,kk] - ld_scores[:,kk] - study_sample_size*self.intercept_mu[study_num]*ld_scores[:,kk] - study_sample_size*ld_scores[:,kk]*other_components)
 				# Update global model parameters
 				self.V_mu[kk, study_num] = (-b_term)/(2.0*a_term)
 				self.V_var[kk, study_num] = (-1.0)/(2.0*a_term)
 				# Sparsity
-				ln_theta_V_expected_val = special.digamma(self.theta_V_a[kk]) - special.digamma(self.theta_V_a[kk]+self.theta_V_b[kk])  # expectation of ln(1-X)
-				ln_1_minus_theta_V_expected_val = special.digamma(self.theta_V_b[kk]) - special.digamma(self.theta_V_a[kk]+self.theta_V_b[kk])
-				if vi_iter > 1:
-					z_term = ln_theta_V_expected_val - ln_1_minus_theta_V_expected_val + .5*np.log(gamma_V_expected_val) - .5*np.log(-2.0*a_term) + (np.square(b_term)/(-4.0*a_term))
+				#ln_theta_V_expected_val = special.digamma(self.theta_V_a[kk]) - special.digamma(self.theta_V_a[kk]+self.theta_V_b[kk])  # expectation of ln(1-X)
+				#ln_1_minus_theta_V_expected_val = special.digamma(self.theta_V_b[kk]) - special.digamma(self.theta_V_a[kk]+self.theta_V_b[kk])
+				#if vi_iter > 0:
+					#z_term = ln_theta_V_expected_val - ln_1_minus_theta_V_expected_val + .5*np.log(gamma_V_expected_val) - .5*np.log(-2.0*a_term) + (np.square(b_term)/(-4.0*a_term))
 					#z_term = ln_theta_V_expected_val - ln_1_minus_theta_V_expected_val + .5*log_gamma_V_expected_val - .5*np.log(-2.0*a_term) + (np.square(b_term)/(-4.0*a_term))
-					self.S_V[kk, study_num] = sigmoid_function(z_term)
+					#self.S_V[kk, study_num] = sigmoid_function(z_term)
 	def initialize_variables(self):
 		# initialization of V doesn't matter as we learn V on the first step conditioned on U
 		self.V_mu = np.zeros((self.K, self.num_studies))
 		self.V_mu = np.random.randn(self.K, self.num_studies)
-		self.V_var = np.ones((self.K, self.num_studies))
-		self.S_V = np.ones((self.K, self.num_studies))
+		print('start')
+		pca = sklearn.decomposition.PCA(n_components=self.K, whiten=True)
+		pca.fit(np.random.randn(self.num_studies, 200).T)
+		self.V_mu = np.transpose(pca.components_.T)
+		for kk in range(self.K):
+			self.V_mu[kk, :] = (self.V_mu[kk, :] - np.mean(self.V_mu[kk, :]))/np.std(self.V_mu[kk,:])
+		print('end')
+		self.V_var = np.ones((self.K, self.num_studies))*1.0
 		# Initialization of intercept doesn't matter as we learn intercept in the first step, conditioned on U
 		self.intercept_mu = np.zeros(self.num_studies)
-		self.intercept_var = np.ones(self.num_studies)
+		self.intercept_var = np.ones(self.num_studies)*1.0
 		# Initialization of U DOES matter
 		self.U_mu = np.random.randn(self.num_snps, self.K)
-		self.U_var = np.ones((self.num_snps, self.K))
-		for k in range(self.K):
-			self.U_mu[:,k] = ((self.U_mu[:,k]-np.mean(self.U_mu[:,k]))/(10.0*np.std(self.U_mu[:,k])))
+		self.U_var = np.ones((self.num_snps, self.K))*1.0
 		self.S_U = np.ones((self.num_snps, self.K))
 		
 		# Smart init for Residual variance
@@ -407,8 +369,11 @@ class USLDSC(object):
 			reg = LinearRegression().fit(ld_score*study_sample_size, study_chi_sq-1.0)
 			residual_var = np.sum(np.square(reg.predict(ld_score*study_sample_size) - (study_chi_sq-1.0)))/(len(study_chi_sq) -2)
 			resid_varz.append(residual_var)
-		mean_resid_var = np.mean(resid_varz)
+		mean_resid_var = np.mean(resid_varz)/10.0
 		print(mean_resid_var)
+
+
+
 		# Variance params
 		# resid var
 		#self.tau_alpha = np.ones(self.num_studies)
@@ -417,14 +382,12 @@ class USLDSC(object):
 		self.tau_alpha = 1.0
 		self.tau_beta = mean_resid_var
 		# U var
-		self.gamma_U_alpha = .01
-		self.gamma_U_beta = 1.0
+		self.gamma_U_alpha = np.ones(self.K)*1.0
+		self.gamma_U_beta = np.ones(self.K)*10.0
 		# V var
-		self.gamma_V_alpha = 1.0
-		self.gamma_V_beta = 1e-7
+		self.gamma_V_alpha = np.ones(self.K)*1.0
+		self.gamma_V_beta = np.ones(self.K)*10.0
 
 		# Sparsity parameters
-		self.theta_U_a = np.ones(self.K)*.3
+		self.theta_U_a = np.ones(self.K)
 		self.theta_U_b = np.ones(self.K)
-		self.theta_V_a = np.ones(self.K)
-		self.theta_V_b = np.ones(self.K)

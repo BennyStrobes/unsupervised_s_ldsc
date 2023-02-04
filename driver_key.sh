@@ -192,7 +192,7 @@ if false; then
 sbatch run_usldsc.sh $training_data_study_file $training_data_pairwise_ld_file $training_data_cluster_info_file $k $model_version $output_root $b_v
 fi
 
-k="10"
+k="30"
 model_version="weighted_dirichlet_constrained_V_vi"
 model_name="trained_standardized_usldsc_"$model_version"_k_"$k"_b_v_prior_"$b_v"_other_init2_"
 if false; then
